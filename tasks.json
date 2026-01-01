@@ -1,0 +1,105 @@
+[
+  {
+    "id": 1,
+    "title": "Read",
+    "description": "Study Chapters 1 to 3",
+    "status": false,
+    "created_at": "2026-01-01T13:12:30.637897",
+    "deleted": false,
+    "priority": "high",
+    "tags": [
+      "study",
+      "architecture"
+    ],
+    "due_date": "2026-01-05T00:00:00",
+    "recurring": null,
+    "reminder": null
+  },
+  {
+    "id": 2,
+    "title": "Prepare",
+    "description": "AI Slides presentation for meeting",
+    "status": false,
+    "created_at": "2026-01-01T13:17:40.771989",
+    "deleted": false,
+    "priority": "medium",
+    "tags": [
+      "work"
+    ],
+    "due_date": null,
+    "recurring": null,
+    "reminder": "2026-01-02T09:00:00"
+  },
+  {
+    "id": 3,
+    "title": "Planning",
+    "description": "Plan tasks for next week",
+    "status": false,
+    "created_at": "2026-01-01T13:18:50.339138",
+    "deleted": false,
+    "priority": "medium",
+    "tags": [],
+    "due_date": null,
+    "recurring": {
+      "interval": "weekly",
+      "count": 4
+    },
+    "reminder": null
+  },
+  {
+    "id": 4,
+    "title": "Fix",
+    "description": "Login bug Token expires early",
+    "status": false,
+    "created_at": "2026-01-01T13:22:11.250718",
+    "deleted": false,
+    "priority": "high",
+    "tags": [
+      "backend",
+      "bug",
+      "urgent"
+    ],
+    "due_date": null,
+    "recurring": null,
+    "reminder": null
+  },
+  {
+    "id": 5,
+    "title": "Deliver",
+    "description": "Presentation in Governor House",
+    "status": false,
+    "created_at": "2026-01-01T13:23:41.545273",
+    "deleted": false,
+    "priority": "high",
+    "tags": [],
+    "due_date": null,
+    "recurring": null,
+    "reminder": null
+  },
+  {
+    "id": 6,
+    "title": "Help",
+    "description": "Class fellows to achieve all required tasks",
+    "status": true,
+    "created_at": "2026-01-01T13:24:29.131632",
+    "deleted": false,
+    "priority": "high",
+    "tags": [],
+    "due_date": null,
+    "recurring": null,
+    "reminder": null
+  },
+  {
+    "id": 7,
+    "title": "Test",
+    "description": "feature check",
+    "status": true,
+    "created_at": "2026-01-01T13:37:14.710225",
+    "deleted": false,
+    "priority": "medium",
+    "tags": [],
+    "due_date": null,
+    "recurring": null,
+    "reminder": "2026-01-01T00:00:00"
+  }
+]

@@ -1,55 +1,59 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!-- SYNC IMPACT REPORT:
+Version change: N/A (initial version) → 1.0.0
+List of modified principles: N/A (initial constitution)
+Added sections: All sections (initial constitution)
+Removed sections: None
+Templates requiring updates:
+  - .specify/templates/plan-template.md: ⚠ pending
+  - .specify/templates/spec-template.md: ⚠ pending
+  - .specify/templates/tasks-template.md: ⚠ pending
+  - .specify/templates/commands/*.md: ⚠ pending
+  - README.md: ⚠ pending
+Follow-up TODOs: None
+-->
+# Todo In-Memory Python Console App Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Clean Architecture
+The application follows clean architecture principles with clear separation of concerns. Business logic is isolated from UI and infrastructure concerns, ensuring that domain rules remain independent of implementation details. The core business logic must be testable without UI dependencies.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### II. Console-First Interface
+All functionality must be accessible through a console-based CLI interface. User interactions follow text-in/text-out protocol: user commands via stdin/args → stdout responses, errors → stderr. Support both interactive mode and command-line arguments for all features.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### III. Test-First (NON-NEGOTIABLE)
+TDD is mandatory: Tests written → Requirements approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced. All business logic and user interactions must have corresponding tests before implementation.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### IV. Domain-Driven Design
+Business rules and domain logic are encapsulated in the domain layer. All todo operations must follow domain rules: tasks have defined states (pending, completed), priorities, and validation constraints. Domain integrity must be maintained across all operations.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### V. In-Memory Persistence
+Data is stored in-memory during Phase I with no external database dependencies. The architecture must support future persistence mechanisms (file system, database) without requiring domain logic changes. State must be preserved during application runtime.
 
-### [PRINCIPLE_6_NAME]
+### VI. Minimal Viable Implementation
+Start with the most basic implementation that satisfies requirements. No speculative functionality beyond the 5 basic features: Add Task, Delete Task, Update Task, View Task List, Mark as Complete. Follow YAGNI principles to avoid over-engineering.
 
+## Constraints
+- Python 3.13+ is required for all implementations
+- No external database dependencies in Phase I
+- Console-based interface only (no GUI elements)
+- Maximum 5 basic features for Phase I
+- All domain validation must occur before state changes
+- Code must follow PEP 8 style guidelines
+- All functions should have clear docstrings
+- Error handling must be graceful with clear user messages
 
-[PRINCIPLE__DESCRIPTION]
-
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
-
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
-
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
-
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+## Development Workflow
+- All features must start with a specification document
+- Code reviews required before merging
+- All tests must pass before acceptance
+- Follow the spec → plan → tasks → implementation workflow
+- Each commit must reference specific tasks or requirements
+- Maintain backward compatibility within Phase I features
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
+This constitution serves as the source of truth for all development decisions in Phase I. All feature specifications, implementation plans, and code must align with these principles. Any deviation requires explicit amendment to this constitution with proper justification.
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+All pull requests must verify compliance with these principles. Code complexity must be justified with clear benefits. Use this constitution as the primary guidance document for development decisions.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.0.0 | **Ratified**: 2025-12-28 | **Last Amended**: 2025-12-28
