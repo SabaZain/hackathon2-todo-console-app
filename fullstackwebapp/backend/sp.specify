@@ -1,0 +1,51 @@
+# Phase II Backend Specification - Hackathon II Todo App
+
+## Backend Role Overview
+The backend serves as a stateless REST API provider that handles authentication verification, data persistence, and business logic enforcement. It acts as the authoritative source of truth for all task-related data, ensuring data integrity and user isolation across all operations. The backend receives requests from frontend clients and responds with appropriate data while enforcing all security and business rules.
+
+## Authentication & User Identification
+The backend implements JWT-based authentication to verify user identity and authorize access to resources. All API requests must include a valid JWT token in the Authorization header using the Bearer scheme. The backend validates the token signature using a shared secret and extracts user identity information (user_id, email) from the decoded token. Requests without a valid token are rejected with a 401 Unauthorized status. Similarly, requests with invalid, expired, or malformed tokens are also rejected with a 401 Unauthorized status.
+
+## User Isolation Rules
+The backend strictly enforces user isolation by never trusting user identifiers sent from the frontend alone. All authenticated user identities must match the request context, meaning that the user ID extracted from the JWT token must be the same as the user whose data is being accessed. The backend only retrieves, modifies, or deletes tasks that belong to the authenticated user. Any attempt to access another user's data results in the request being rejected with appropriate error responses.
+
+## Task Ownership Model
+Each task in the system belongs to exactly one authenticated user. The user ID is always derived from the JWT token rather than from any data in the request body or URL parameters. Ownership is validated and enforced on every operation that involves tasks, ensuring that users can only perform actions on their own tasks. Tasks cannot be transferred between users under any circumstances, maintaining a strict one-to-one relationship between tasks and users.
+
+## Task CRUD Behavior
+The backend implements standard Create, Read, Update, and Delete operations with specific behavioral rules for each:
+
+### Create Task
+When creating a new task, the backend requires that the user is authenticated and includes a valid JWT token. The task title is mandatory and must be provided in the request. The newly created task is automatically associated with the authenticated user based on the JWT token. By default, new tasks are created in an incomplete state unless otherwise specified.
+
+### List Tasks
+When listing tasks, the backend only returns tasks that belong to the authenticated user. The endpoint supports filtering by completion status (completed/incomplete) to allow for more targeted queries. Under no circumstances does the backend return tasks belonging to other users, ensuring complete data isolation.
+
+### Get Task by ID
+When retrieving a specific task by its ID, the backend validates that the task belongs to the authenticated user. If the task does not exist, the backend returns a 404 Not Found status. If the task exists but does not belong to the authenticated user, the backend returns a 403 Forbidden status.
+
+### Update Task
+When updating a task, only the task owner may perform the update operation. The backend supports updating the task title, description, and completion status. Before performing any update, the backend validates that the task belongs to the authenticated user.
+
+### Delete Task
+When deleting a task, only the task owner may perform the deletion operation. Deletion is permanent and irreversible. Before performing the deletion, the backend validates that the task belongs to the authenticated user.
+
+### Toggle Completion
+When toggling a task's completion status, only the task owner may perform this operation. The operation flips only the completion state of the task, leaving all other fields unchanged.
+
+## Error Handling Rules
+The backend follows standardized HTTP error response codes to indicate the outcome of requests:
+
+- 401 Unauthorized: Returned when requests are missing authentication tokens or when tokens are invalid/expired
+- 403 Forbidden: Returned when authenticated users attempt to access resources they are not authorized to access
+- 404 Not Found: Returned when requested resources (such as specific tasks) do not exist
+- 400 Bad Request: Returned when request data is invalid, malformed, or missing required fields
+
+## Data Integrity Rules
+The backend validates all incoming data to ensure it meets required formats and constraints. The system enforces ownership rules on every operation without exception. The backend never relies on validation performed by the frontend, performing all necessary validation server-side. The system maintains consistent task state across all operations, ensuring data integrity at all times.
+
+## Non-Responsibilities
+The backend explicitly does NOT handle UI rendering or generate any frontend markup. It does NOT manage frontend sessions or store authentication state in frontend components. The backend does NOT control navigation or layout decisions, which are the responsibility of the frontend. The backend provides only API endpoints and does not concern itself with how the frontend chooses to present information to users.
+
+## Spec Discipline
+This specification must be followed exactly before any backend implementation begins. No backend code may be written without referencing and adhering to this specification. Any changes to the required behavior must be made by updating this specification first, followed by implementation updates. All development activities must be traceable back to requirements defined in this document.

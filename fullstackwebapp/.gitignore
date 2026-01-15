@@ -1,0 +1,87 @@
+# Dependencies
+node_modules/
+backend/venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+ENV/
+
+# Environment variables
+.env
+.env.*
+backend/.env
+backend/.env.*
+frontend/.env
+frontend/.env.*
+
+# Allow .env.example
+!.env.example
+!backend/.env.example
+
+# Database
+*.db
+*.db-journal
+
+# Local files
+todo_app.db
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+coverage/
+*.coverage
+.hypothesis/
+
+# Secrets
+secrets/
+*.key
+*.pem
+*.crt
+*.cert
+*.secret
+
+# Next.js
+frontend/.next/
+frontend/out/
+
+# Production build
+frontend/build/
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Cache
+.cache/
+.nuxt/
+.vuepress/dist/
+.sanity/
+.vercel/
