@@ -12,7 +12,7 @@ from typing import Optional
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from backend.models import Task  # We'll use this for type hints in ownership checks
+from models import Task  # We'll use this for type hints in ownership checks
 
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")

@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select
 from typing import List
-from backend.db import get_session
-from backend.models import Task
-from backend.auth import get_current_user_id
+from db import get_session
+from models import Task
+from auth import get_current_user_id
 
 
 """

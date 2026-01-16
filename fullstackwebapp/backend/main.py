@@ -1,8 +1,8 @@
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import SQLModel
-from backend.db import engine
-from backend.routes import tasks
+from db import engine
+from routes import tasks
 
 
 # Create the FastAPI application instance
