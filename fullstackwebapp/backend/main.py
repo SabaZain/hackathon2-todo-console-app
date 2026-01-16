@@ -16,6 +16,7 @@ app = FastAPI(
 origins = [
     "http://localhost:3000",
     "https://hackathon2-todo-console-app-lazz.vercel.app",
+    "https://hackathon2-todo-console-app-qu73.vercel.app",
 ]
 
 app.add_middleware(
