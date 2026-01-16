@@ -6,7 +6,8 @@ These functions handle token creation, verification, and user authentication
 to secure the API endpoints and enforce user isolation.
 """
 
-from fastapi import Request, HTTPException, Depends, status
+from fastapi import Request, HTTPException, Depends, status, Security
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import os
 from typing import Optional
 from datetime import datetime, timedelta
@@ -109,7 +110,10 @@ def verify_token(token: str) -> Optional[dict]:
         return None
 
 
-def get_current_user_id(authorization: str = None) -> int:
+security = HTTPBearer()
+
+
+def get_current_user_id(credentials: HTTPAuthorizationCredentials = Security(security)) -> int:
     """
     Extract the current user's ID from the Authorization header.
 
@@ -118,7 +122,7 @@ def get_current_user_id(authorization: str = None) -> int:
     JWT token in the Authorization header.
 
     Args:
-        authorization: The Authorization header value (e.g., "Bearer <token>")
+        credentials: HTTP Authorization credentials containing the Bearer token
 
     Returns:
         int: The ID of the currently authenticated user
@@ -127,45 +131,32 @@ def get_current_user_id(authorization: str = None) -> int:
         HTTPException: With status code 401 if no user is authenticated
                       With status code 403 if access is forbidden
     """
-    # TEMPORARY DEV AUTH BYPASS – REMOVE BEFORE PRODUCTION
-    # Always return a fixed user_id for local development
-    return 1
+    # Extract the token from the credentials
+    token = credentials.credentials
 
-    # Original implementation (commented out for development):
-    # Check if Authorization header is provided
-    # if not authorization or not authorization.startswith("Bearer "):
-    #     raise HTTPException(
-    #         status_code=status.HTTP_401_UNAUTHORIZED,
-    #         detail="Not authenticated",
-    #         headers={"WWW-Authenticate": "Bearer"},
-    #     )
-    #
-    # # Extract the token from the "Bearer <token>" format
-    # token = authorization.split(" ")[1]
-    #
-    # # Verify the token and decode the payload
-    # payload = verify_token(token)
-    #
-    # # Check if token is valid and contains user_id
-    # if payload is None:
-    #     raise HTTPException(
-    #         status_code=status.HTTP_401_UNAUTHORIZED,
-    #         detail="Could not validate credentials",
-    #         headers={"WWW-Authenticate": "Bearer"},
-    #     )
-    #
-    # # Extract user_id from the payload
-    # user_id: int = payload.get("user_id")
-    #
-    # # Check if user_id exists in the payload
-    # if user_id is None:
-    #     raise HTTPException(
-    #         status_code=status.HTTP_401_UNAUTHORIZED,
-    #         detail="Could not validate credentials",
-    #         headers={"WWW-Authenticate": "Bearer"},
-    #     )
-    #
-    # return user_id
+    # Verify the token and decode the payload
+    payload = verify_token(token)
+
+    # Check if token is valid and contains user_id
+    if payload is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Extract user_id from the payload
+    user_id: int = payload.get("user_id")
+
+    # Check if user_id exists in the payload
+    if user_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    return user_id
 
 
 def require_user_owns_task(task: Task, current_user_id: int = Depends(get_current_user_id)) -> int:

@@ -6,12 +6,20 @@ import { Task, User, TaskFormData, UserFormData, SigninFormData } from '@/types'
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://hackathon2-todo-console-app-lazz.vercel.app';
 
 // Helper function to add auth token to headers
-// NOTE: Authentication is temporarily bypassed for local development
-// Headers will not include Authorization since backend bypasses JWT validation
 const getAuthHeaders = () => {
-  return {
+  // Get the token from localStorage
+  const token = localStorage.getItem('token');
+
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
+
+  // If a token exists, add the Authorization header
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  return headers;
 };
 
 // Helper function to handle API responses
@@ -23,38 +31,77 @@ const handleResponse = async (response: Response) => {
   return response.json();
 };
 
-// Authentication API (stubs for now until backend auth is implemented)
+// Authentication API
 export const authAPI = {
   signin: async (credentials: SigninFormData): Promise<{ token: string; user: User }> => {
     console.log('Signin attempt with:', credentials);
 
-    // For now, simulate successful login with a mock token
-    // In the future, this would connect to the backend auth endpoint
-    const mockToken = 'mock-jwt-token-for-testing';
-    const mockUser: User = {
-      id: 'user-1',
-      name: 'Test User',
+    // Send credentials to the backend login endpoint
+    const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: credentials.email,
+        password: credentials.password,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: 'Login failed' }));
+      throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    // Store the JWT access token in localStorage
+    localStorage.setItem('token', data.access_token);
+
+    // Create a mock user object from the response
+    // In a real scenario, we might fetch user details separately
+    const user: User = {
+      id: data.user_id.toString(), // Convert to string to match User interface
+      name: credentials.email.split('@')[0], // Use email prefix as name
       email: credentials.email
     };
 
-    // Store token in localStorage
-    localStorage.setItem('token', mockToken);
-
-    return { token: mockToken, user: mockUser };
+    return { token: data.access_token, user: user };
   },
 
-  signup: async (userData: UserFormData): Promise<{ user: User }> => {
+  signup: async (userData: UserFormData): Promise<{ token: string; user: User }> => {
     console.log('Signup attempt with:', userData);
 
-    // For now, simulate successful registration with a mock user
-    // In the future, this would connect to the backend auth endpoint
-    const mockUser: User = {
-      id: 'user-' + Date.now(),
-      name: userData.name,
+    // Send user data to the backend registration endpoint
+    const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: userData.email,
+        password: userData.password,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: 'Registration failed' }));
+      throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    // Store the JWT access token in localStorage
+    localStorage.setItem('token', data.access_token);
+
+    // Create a user object from the response
+    const user: User = {
+      id: data.user_id.toString(), // Convert to string to match User interface
+      name: userData.email.split('@')[0], // Use email prefix as name
       email: userData.email
     };
 
-    return { user: mockUser };
+    return { token: data.access_token, user: user };
   },
 
   signout: async (): Promise<void> => {

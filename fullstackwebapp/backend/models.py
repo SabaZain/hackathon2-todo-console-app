@@ -3,6 +3,41 @@ from datetime import datetime
 from typing import Optional
 
 
+class User(SQLModel, table=True):
+    """
+    User model representing a registered user in the database.
+
+    Fields:
+    - id: Primary key, auto-incrementing integer
+    - email: String, unique email address of the user
+    - hashed_password: String, bcrypt-hashed password
+    - created_at: DateTime, timestamp when the user was created
+    """
+    # Primary key field - automatically increments
+    id: Optional[int] = Field(default=None, primary_key=True)
+
+    # Email address - must be unique
+    email: str = Field(
+        ...,
+        unique=True,
+        min_length=5,
+        max_length=100,
+        description="Unique email address of the user"
+    )
+
+    # Hashed password
+    hashed_password: str = Field(
+        ...,
+        description="Bcrypt-hashed password"
+    )
+
+    # Timestamp when the user was created
+    created_at: datetime = Field(
+        default_factory=datetime.now,
+        description="Timestamp when the user was created"
+    )
+
+
 class Task(SQLModel, table=True):
     """
     Task model representing a todo item in the database.

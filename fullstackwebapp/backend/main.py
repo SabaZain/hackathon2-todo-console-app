@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import SQLModel
 from db import engine
 from routes import tasks
+from routes import auth
 
 
 # Create the FastAPI application instance
@@ -40,6 +41,10 @@ async def on_startup():
     # Create all database tables based on the models
     SQLModel.metadata.create_all(bind=engine)
 
+
+# Include the auth routes under the /api/auth path
+# The routes/auth.py module handles user registration and authentication
+app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 
 # Include the task routes under the /api/tasks path
 # The routes/tasks.py module handles authentication and ownership enforcement
