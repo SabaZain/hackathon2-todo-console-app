@@ -19,9 +19,9 @@ from models import Task  # We'll use this for type hints in ownership checks
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # JWT Configuration
-JWT_SECRET = os.getenv("BETTER_AUTH_SECRET")
+JWT_SECRET = os.getenv("JWT_SECRET")
 if not JWT_SECRET:
-    raise ValueError("BETTER_AUTH_SECRET environment variable is required")  # Secret key for signing JWT tokens
+    raise ValueError("JWT_SECRET environment variable is required")  # Secret key for signing JWT tokens
 JWT_ALGORITHM = "HS256"  # Algorithm used for signing tokens
 JWT_EXPIRATION_MINUTES = 30  # Expiration time for tokens (in minutes)
 
