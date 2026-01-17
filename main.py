@@ -73,6 +73,16 @@ def health_check():
     """
     return {"status": "healthy", "api": "Todo App API"}
 
+# Health check endpoint under API path for Vercel compatibility
+@app.get("/api/health")
+def api_health_check():
+    """
+    Health check endpoint that confirms the API is operational.
+
+    Returns a simple status message indicating the API is healthy.
+    """
+    return {"status": "healthy", "api": "Todo App API"}
+
 
 # Global exception handler for unhandled exceptions
 @app.exception_handler(Exception)
