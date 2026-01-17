@@ -24,7 +24,7 @@ tests:
 
 ## Prompt
 
-Update the frontend code in the project to connect to the live backend deployed on Vercel at "https://hackathon2-todo-console-app-lazz.vercel.app".
+Update the frontend code in the project to connect to the live backend deployed on Vercel at "https://hackathon2-todo-console-app-lazz-v2.vercel.app".
 
 - Find all API calls in the frontend that currently use relative paths like "/tasks" or "/todos".
 - Replace them with the full URL using a constant, e.g., BACKEND_URL.

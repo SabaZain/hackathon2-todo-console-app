@@ -3,7 +3,7 @@
 import { Task, User, TaskFormData, UserFormData, SigninFormData } from '@/types';
 
 // Base API URL - will be configured based on environment
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://hackathon2-todo-console-app-lazz.vercel.app';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://hackathon2-todo-console-app-lazz-v2.vercel.app';
 
 // Helper function to add auth token to headers
 const getAuthHeaders = () => {

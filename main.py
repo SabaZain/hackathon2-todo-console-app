@@ -17,7 +17,7 @@ app = FastAPI(
 origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    "https://hackathon2-todo-console-app-lazz.vercel.app",
+    "https://hackathon2-todo-console-app-lazz-v2.vercel.app",
     "https://hackathon2-todo-console-app-qu73.vercel.app",
 ]
 
