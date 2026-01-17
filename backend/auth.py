@@ -21,12 +21,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # JWT Configuration
 JWT_SECRET = os.getenv("BETTER_AUTH_SECRET")
 if not JWT_SECRET:
-    # For local development or build time, use a temporary secret
-    # This allows the app to initialize during build/deployment
-    # IMPORTANT: This is not secure for production - set BETTER_AUTH_SECRET in production
-    import warnings
-    warnings.warn("BETTER_AUTH_SECRET not set, using temporary secret. This is insecure for production!")
-    JWT_SECRET = "temporary-secret-key-for-development-or-build"  # DO NOT USE IN PRODUCTION
+    raise ValueError("BETTER_AUTH_SECRET environment variable is required")  # Secret key for signing JWT tokens
 JWT_ALGORITHM = "HS256"  # Algorithm used for signing tokens
 JWT_EXPIRATION_MINUTES = 30  # Expiration time for tokens (in minutes)
 
