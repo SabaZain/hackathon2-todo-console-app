@@ -70,7 +70,9 @@ def register(user_data: UserCreate, session: Session = Depends(get_session)):
     - 401: Unauthorized - Invalid registration attempt
     """
     # Check if user already exists
-    existing_user = session.exec(select(User).where(User.email == user_data.email)).first()
+    statement = select(User).where(User.email == user_data.email)
+    result = session.execute(statement)
+    existing_user = result.scalar_one_or_none()
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -132,7 +134,9 @@ def login(login_data: UserLogin, session: Session = Depends(get_session)):
     - 401: Unauthorized - Invalid credentials
     """
     # Find user by email
-    user = session.exec(select(User).where(User.email == login_data.email)).first()
+    statement = select(User).where(User.email == login_data.email)
+    result = session.execute(statement)
+    user = result.scalar_one_or_none()
 
     # Check if user exists and password is correct
     if not user or not verify_password(login_data.password, user.hashed_password):
