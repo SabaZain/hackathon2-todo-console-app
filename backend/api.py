@@ -1,5 +1,16 @@
+# Vercel serverless function entrypoint
 import sys
 import os
-sys.path.append(os.path.dirname(__file__))
+# Add the backend directory to the Python path
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from main import app  # import the existing FastAPI app
+# Import the main app after adjusting the path
+from main import app
+
+# Export the app for Vercel
+try:
+    # For Vercel Python runtime
+    app_instance = app
+except NameError:
+    # Fallback
+    from main import app as app_instance
