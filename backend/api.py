@@ -1,2 +1,5 @@
-from fastapi import FastAPI
-from .main import app  # import the existing FastAPI app
+import sys
+import os
+sys.path.append(os.path.dirname(__file__))
+
+from main import app  # import the existing FastAPI app
