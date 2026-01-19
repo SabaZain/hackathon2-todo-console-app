@@ -10,12 +10,24 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     raise ValueError("DATABASE_URL environment variable is required")
 
+# Check if running in production (Render or other production environment)
+is_production = bool(os.getenv("RENDER")) or os.getenv("ENVIRONMENT") == "production" or os.getenv("ENV") == "production"
 
-# Create the database engine
-engine = create_engine(
-    DATABASE_URL,
-    echo=True  # Set to True for SQL debugging
-)
+# Configure engine with SSL for production, no SSL changes for local development
+if is_production:
+    # Add SSL requirement for production environments like Render
+    connect_args = {"sslmode": "require"}
+    engine = create_engine(
+        DATABASE_URL,
+        echo=True,  # Set to True for SQL debugging
+        connect_args=connect_args
+    )
+else:
+    # No SSL changes for local development - maintain existing behavior
+    engine = create_engine(
+        DATABASE_URL,
+        echo=True  # Set to True for SQL debugging
+    )
 
 
 def get_session() -> Generator[Session, None, None]:
