@@ -1,0 +1,65 @@
+# Phase II Backend Task Tracker - Hackathon II Todo App
+
+## Overview
+This task tracker is designed to monitor all backend implementation steps for the Phase II Hackathon II Todo App. All tasks align with the implementation plan (sp.plan) and backend specification (sp.specify). Each task includes beginner-friendly descriptions and status indicators to track progress.
+
+## Task List
+
+1. **Project structure setup**
+   - Create placeholders for:
+     - main.py
+     - routes/ directory
+     - models.py
+     - db.py
+     - history/ (for prompts)
+   - Status: Pending
+
+2. **Database connection setup**
+   - Configure Neon PostgreSQL connection
+   - Ensure SQLModel usage
+   - Status: Pending
+
+3. **Authentication & JWT middleware**
+   - Implement middleware placeholder
+   - Verify JWT and decode user identity
+   - Status: Pending
+
+4. **Task CRUD endpoints placeholders**
+   - GET /api/tasks
+   - POST /api/tasks
+   - GET /api/tasks/{id}
+   - PUT /api/tasks/{id}
+   - DELETE /api/tasks/{id}
+   - PATCH /api/tasks/{id}/complete
+   - Status: Pending
+
+5. **Data validation & integrity**
+   - Input validation rules
+   - Ownership enforcement
+   - Error handling (401, 403, 404, 400)
+   - Status: Pending
+
+6. **Testing & iteration**
+   - Unit test placeholders
+   - Integration test plan
+   - Ensure user task isolation
+   - Status: Pending
+
+## Dependencies & Reusable Components
+- Reference reusable agents and skills from .claude folder
+- Use Todo Domain Skill for task rules
+- Use Hackathon Guard agent for security checks
+
+## Constraints
+- No frontend code
+- No implementation yet
+- Keep tasks beginner-friendly and actionable
+
+## Prompt History Recording (PHR)
+- Automatically create PHR entry for this command
+- Save location: fullstackwebapp/backend/history/prompts/
+- Include:
+  - Command used
+  - Intent description
+  - Full original prompt text
+  - Note about automatic recording per backend constitution
