@@ -10,7 +10,7 @@ const ChatBotWrapper = () => {
 
   useEffect(() => {
     // Function to get user ID from JWT token
-    const getUserIdFromToken = (token) => {
+    const getUserIdFromToken = (token: string) => {
       try {
         const parts = token.split('.');
         if (parts.length !== 3) return null;
@@ -81,7 +81,7 @@ const ChatBotWrapper = () => {
     checkAuth();
 
     // Add listener for storage changes (e.g., when user logs in/out from another tab)
-    const handleStorageChange = (e) => {
+    const handleStorageChange = (e: StorageEvent) => {
       // Only react to changes in token-related items
       if (e.key && (e.key.includes('token') || e.key.includes('auth'))) {
         setTimeout(checkAuth, 100); // Small delay to ensure localStorage is updated
