@@ -65,10 +65,18 @@ except ImportError as e:
     import traceback
     traceback.print_exc()
 except Exception as e:
-    print(f"UNEXPECTED ERROR importing chatbot API: {e}")
-    print("Note: Chatbot functionality will not be available")
-    import traceback
-    traceback.print_exc()
+    # Check if the error is related to table redefinition, which is a known issue
+    error_str = str(e)
+    if "already defined for this MetaData instance" in error_str:
+        print("WARNING: Chatbot API load issue due to table redefinition - this may be a known issue with multiple imports")
+        print("Attempting to continue without chatbot functionality...")
+        import traceback
+        traceback.print_exc()
+    else:
+        print(f"UNEXPECTED ERROR importing chatbot API: {e}")
+        print("Note: Chatbot functionality will not be available")
+        import traceback
+        traceback.print_exc()
 
 
 # Simple root endpoint
