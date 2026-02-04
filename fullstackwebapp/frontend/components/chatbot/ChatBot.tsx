@@ -9,6 +9,20 @@ interface Message {
   timestamp: Date;
 }
 
+interface ToolCall {
+  name?: string;
+  arguments?: Record<string, any>;
+}
+
+interface ChatResponse {
+  response?: string;
+  message?: string;
+  content?: string;
+  response_text?: string;
+  tool_calls?: ToolCall[];
+  intent?: string;
+}
+
 interface ChatBotProps {
   userId: string;
   token: string;
@@ -98,7 +112,7 @@ const ChatBot = ({ userId, token }: ChatBotProps) => {
         throw new Error(`API error: ${response.status} ${response.statusText}. Details: ${errorText}`);
       }
 
-      const data = await response.json();
+      const data: ChatResponse = await response.json();
 
       // DEBUG: Log the received response from backend for troubleshooting
       console.log('DEBUG: Received response from backend:', data);
@@ -143,7 +157,7 @@ const ChatBot = ({ userId, token }: ChatBotProps) => {
 
       try {
         if (data.tool_calls && Array.isArray(data.tool_calls)) {
-          hasTaskOperation = data.tool_calls.some(tool =>
+          hasTaskOperation = data.tool_calls.some((tool: { name?: string }) =>
             tool.name &&
             (tool.name.toLowerCase().includes('create_task') ||
              tool.name.toLowerCase().includes('update_task') ||
