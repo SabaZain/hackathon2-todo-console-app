@@ -35,6 +35,9 @@ if grandparent_dir not in sys.path:
 current_dir = os.path.dirname(os.path.abspath(__file__))  # This is backend/api/
 parent_dir = os.path.dirname(current_dir)  # This is backend/
 
+# Add debugging to see which imports are working
+print("Attempting to import backend.agent modules...")
+
 # Add the hackathontwo directory to the path as well for comprehensive access
 grandparent_dir = os.path.dirname(parent_dir)  # This is hackathontwo/
 

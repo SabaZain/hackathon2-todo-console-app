@@ -60,8 +60,15 @@ try:
     app.include_router(chat_router, prefix="/api", tags=["chatbot"])
     print("Chatbot API routes included successfully")
 except ImportError as e:
-    print(f"Warning: Could not import chatbot API: {e}")
-    print("Note: Chatbot functionality may not be available")
+    print(f"ERROR: Could not import chatbot API: {e}")
+    print("Note: Chatbot functionality will not be available")
+    import traceback
+    traceback.print_exc()
+except Exception as e:
+    print(f"UNEXPECTED ERROR importing chatbot API: {e}")
+    print("Note: Chatbot functionality will not be available")
+    import traceback
+    traceback.print_exc()
 
 
 # Simple root endpoint
