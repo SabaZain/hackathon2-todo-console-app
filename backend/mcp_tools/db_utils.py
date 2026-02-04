@@ -10,20 +10,20 @@ import sys
 import os
 
 # Import models at module level to ensure they're registered once
-try:
-    from ..models import Task, User
-except (ImportError, ValueError):
-    # Fallback for direct execution - try absolute import without backend prefix
-    try:
-        import sys
-        import os
-        backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        if backend_dir not in sys.path:
-            sys.path.insert(0, backend_dir)
-        from models import Task, User
-    except ImportError:
-        # Last resort: try absolute import with backend prefix
-        from backend.models import Task, User
+# Use a single, consistent import path to avoid duplicate registrations
+import sys
+import os
+
+# Get the correct path to import models consistently
+current_dir = os.path.dirname(os.path.abspath(__file__))  # This is backend/mcp_tools/
+backend_dir = os.path.dirname(os.path.dirname(current_dir))  # This is backend/
+
+# Add backend to path if not already there
+if backend_dir not in sys.path:
+    sys.path.insert(0, backend_dir)
+
+# Import models using consistent path
+from models import Task, User
 
 
 def _get_engine():

@@ -2,10 +2,6 @@ from sqlmodel import SQLModel, Field
 from datetime import datetime
 from typing import Optional
 
-# Prevent duplicate table definitions
-import warnings
-warnings.filterwarnings("ignore", ".*already defined for this MetaData instance.*")
-
 
 class User(SQLModel, table=True):
     """
