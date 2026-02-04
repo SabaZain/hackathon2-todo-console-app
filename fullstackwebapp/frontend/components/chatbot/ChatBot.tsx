@@ -202,17 +202,7 @@ const ChatBot = ({ userId, token }: ChatBotProps) => {
           response: assistantText
         });
 
-        // Use the new task updater to notify all subscribers
-        // Check if window is available (client-side) before importing
-        if (typeof window !== 'undefined') {
-          import('@/lib/taskUpdater').then(({ triggerTaskRefresh }) => {
-            triggerTaskRefresh();
-          }).catch(error => {
-            console.warn('Could not load taskUpdater:', error);
-          });
-        }
-
-        // Also dispatch the original event for backward compatibility
+        // Dispatch event to trigger task refresh in the dashboard
         window.dispatchEvent(new CustomEvent('taskUpdated', {
           detail: {
             action: 'refresh',
