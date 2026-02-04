@@ -90,11 +90,15 @@ class ChatAgent:
         self.system_prompt = get_system_prompt()
 
         # Get the Cohere API key
-        cohere_api_key = os.getenv("COHERE_API_KEY")
+        cohere_api_key = os.getenv("COHERE_API_KEY", "REMOVED")
 
         # Validate that the API key is available
         if not cohere_api_key or cohere_api_key == "YOUR_COHERE_API_KEY_HERE":
             raise ValueError("COHERE_API_KEY environment variable is not properly configured. Please set a valid API key in your .env file.")
+
+        # Print warning if using default development key in production
+        if cohere_api_key == "REMOVED":
+            print("WARNING: Using development API key. Please set COHERE_API_KEY environment variable in production.")
 
         self.cohere_client = cohere.Client(cohere_api_key)
         self.jwt_secret = os.getenv("JWT_SECRET")
