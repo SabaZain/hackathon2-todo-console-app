@@ -214,12 +214,12 @@ const ChatBot = ({ userId, token }: ChatBotProps) => {
           }
         }));
       }
-    } catch (error) {
+    } catch (error: any) {
       // DEBUG: Log the full error
       console.error('DEBUG: Full error in handleSendMessage:', error);
 
       // Check if it's a network error or other type of error
-      if (error instanceof TypeError && error.message.includes('fetch')) {
+      if (error instanceof TypeError && error.message?.includes('fetch')) {
         console.error('DEBUG: Network error - unable to reach backend');
       }
 
