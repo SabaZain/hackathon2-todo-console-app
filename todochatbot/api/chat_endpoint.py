@@ -5,7 +5,7 @@ This module implements the FastAPI/FastHTML route for chat communication with JW
 """
 
 import os
-import jwt
+from jose import jwt
 from typing import Dict, Any, Optional
 from fastapi import APIRouter, HTTPException, Depends, Header
 from fastapi.responses import JSONResponse

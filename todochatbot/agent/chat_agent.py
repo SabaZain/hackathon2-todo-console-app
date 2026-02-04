@@ -7,7 +7,7 @@ and invokes MCP tools for todo operations using Cohere NLP and JWT authenticatio
 
 import os
 import asyncio
-import jwt
+from jose import jwt
 import cohere
 from typing import Dict, Any, Optional
 from .system_prompt import get_system_prompt

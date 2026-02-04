@@ -5,7 +5,7 @@ This module confirms proper authentication and authorization.
 """
 
 from typing import Dict, Any, Optional
-import jwt
+from jose import jwt
 import hashlib
 import secrets
 from datetime import datetime, timedelta
