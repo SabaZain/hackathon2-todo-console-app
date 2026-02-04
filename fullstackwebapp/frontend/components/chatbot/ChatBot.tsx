@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, KeyboardEvent } from 'react';
+import { triggerTaskRefresh } from '@/lib/taskUpdater';
 
 interface Message {
   id: string;
@@ -203,9 +204,7 @@ const ChatBot = ({ userId, token }: ChatBotProps) => {
         });
 
         // Use the new task updater to notify all subscribers
-        import('@/lib/taskUpdater').then(({ triggerTaskRefresh }) => {
-          triggerTaskRefresh();
-        });
+        triggerTaskRefresh();
 
         // Also dispatch the original event for backward compatibility
         window.dispatchEvent(new CustomEvent('taskUpdated', {
