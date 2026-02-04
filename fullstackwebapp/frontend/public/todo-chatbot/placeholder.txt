@@ -1,0 +1,2 @@
+// Public directory for static assets
+// This file is just a placeholder to indicate that the chatbot files should be served from public

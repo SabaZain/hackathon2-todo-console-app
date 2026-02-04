@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo AI Chatbot Test Page</title>
+    <link rel="stylesheet" href="responsive-styles.css">
+    <link rel="stylesheet" href="chat-widget-styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Todo Application</h1>
+            <p>Manage your tasks efficiently</p>
+        </header>
+
+        <main>
+            <section class="tasks-section">
+                <h2>Your Tasks</h2>
+                <div class="task-list">
+                    <div class="task-item">
+                        <input type="checkbox" id="task1">
+                        <label for="task1">Complete project proposal</label>
+                    </div>
+                    <div class="task-item">
+                        <input type="checkbox" id="task2">
+                        <label for="task2">Schedule team meeting</label>
+                    </div>
+                    <div class="task-item">
+                        <input type="checkbox" id="task3">
+                        <label for="task3">Review documentation</label>
+                    </div>
+                </div>
+            </section>
+
+            <section class="add-task-section">
+                <h2>Add New Task</h2>
+                <form id="add-task-form">
+                    <input type="text" id="task-input" placeholder="Enter task description..." required>
+                    <select id="priority-select">
+                        <option value="low">Low Priority</option>
+                        <option value="medium" selected>Medium Priority</option>
+                        <option value="high">High Priority</option>
+                    </select>
+                    <button type="submit">Add Task</button>
+                </form>
+            </section>
+        </main>
+    </div>
+
+    <!-- Container for the chat widget -->
+    <div id="todo-chat-container"></div>
+
+    <!-- Load the chatbot frontend components -->
+    <script src="api-client.js"></script>
+    <script src="chat-icon.js"></script>
+    <script src="chat-interface.js"></script>
+    <script src="message-display.js"></script>
+    <script src="message-sender.js"></script>
+    <script src="response-handler.js"></script>
+    <script src="state-manager.js"></script>
+    <script src="typing-indicator.js"></script>
+    <script src="ui-controller.js"></script>
+    <script src="integration.js"></script>
+
+    <script>
+        // Set up the API client to connect to the chatbot backend
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.TodoAPIClient) {
+                // Update the API client to point to the correct backend
+                window.TodoAPIClient.baseURL = 'http://127.0.0.1:8000/api';
+
+                // You can also set the auth token if needed
+                // window.TodoAPIClient.setAuthToken('your-jwt-token-here');
+            }
+
+            console.log('Todo AI Chatbot frontend components loaded');
+        });
+    </script>
+</body>
+</html>

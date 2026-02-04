@@ -10,7 +10,7 @@ from routes import auth
 app = FastAPI(
     title="Todo App API",
     version="1.0.0",
-    description="A secure todo application API with JWT authentication and user isolation"
+    description="A secure todo application API with JWT authentication, user isolation, and AI chatbot integration"
 )
 
 # Configure CORS middleware
@@ -27,6 +27,8 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    # Expose the authorization header to allow JWT tokens to be passed through
+    expose_headers=["Authorization"]
 )
 
 
@@ -50,6 +52,16 @@ app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 # Include the task routes under the /api/tasks path
 # The routes/tasks.py module handles authentication and ownership enforcement
 app.include_router(tasks.router, prefix="/api/tasks", tags=["tasks"])
+
+# Include the chatbot API routes
+try:
+    from api.chat_endpoint import get_router as get_chat_router
+    chat_router = get_chat_router()
+    app.include_router(chat_router, prefix="/api", tags=["chatbot"])
+    print("Chatbot API routes included successfully")
+except ImportError as e:
+    print(f"Warning: Could not import chatbot API: {e}")
+    print("Note: Chatbot functionality may not be available")
 
 
 # Simple root endpoint
