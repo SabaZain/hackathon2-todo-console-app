@@ -9,10 +9,10 @@ from typing import Dict, Any, Optional
 from datetime import datetime
 import os
 
-# Get the Cohere API key from environment variables, falling back to hardcoded value only for development
-cohere_api_key = os.getenv('COHERE_API_KEY', "REMOVED")
-if cohere_api_key == "REMOVED":
-    print("WARNING: Using hardcoded API key. Please set COHERE_API_KEY environment variable in production.")
+# Get the Cohere API key from environment variables
+cohere_api_key = os.getenv('COHERE_API_KEY')
+if not cohere_api_key:
+    raise ValueError("COHERE_API_KEY environment variable is required. Please set it in your deployment environment.")
 os.environ['COHERE_API_KEY'] = cohere_api_key
 
 import sys
