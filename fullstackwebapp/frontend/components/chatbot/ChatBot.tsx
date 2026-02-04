@@ -203,14 +203,13 @@ const ChatBot = ({ userId, token }: ChatBotProps) => {
         });
 
         // Use the new task updater to notify all subscribers
-        // Dynamically import the module to avoid SSR issues
-        try {
-          (async () => {
-            const { triggerTaskRefresh } = await import('@/lib/taskUpdater');
+        // Check if window is available (client-side) before importing
+        if (typeof window !== 'undefined') {
+          import('@/lib/taskUpdater').then(({ triggerTaskRefresh }) => {
             triggerTaskRefresh();
-          })();
-        } catch (error) {
-          console.warn('Could not load taskUpdater:', error);
+          }).catch(error => {
+            console.warn('Could not load taskUpdater:', error);
+          });
         }
 
         // Also dispatch the original event for backward compatibility
