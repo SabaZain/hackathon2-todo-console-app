@@ -1,0 +1,91 @@
+name: Phase 4 - Deploy to Minikube
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Setup Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Start Minikube
+      uses: medyagh/setup-minikube@master
+      with:
+        minikube-version: 'latest'
+        kubernetes-version: 'v1.28.3'
+        driver: docker
+
+    - name: Build Frontend Docker Image
+      run: |
+        cd phase4-local-k8s/frontend
+        docker build -t cloud-native-todo-frontend:${{ github.sha }} .
+
+    - name: Build Backend Docker Image
+      run: |
+        cd phase4-local-k8s/backend
+        docker build -t cloud-native-todo-backend:${{ github.sha }} .
+
+    - name: Tag Images for Minikube
+      run: |
+        docker tag cloud-native-todo-frontend:${{ github.sha }} cloud-native-todo-frontend:latest
+        docker tag cloud-native-todo-backend:${{ github.sha }} cloud-native-todo-backend:latest
+
+    - name: Load Images into Minikube
+      run: |
+        minikube image load cloud-native-todo-frontend:${{ github.sha }}
+        minikube image load cloud-native-todo-backend:${{ github.sha }}
+        minikube image load cloud-native-todo-frontend:latest
+        minikube image load cloud-native-todo-backend:latest
+
+    - name: Deploy Backend to Minikube
+      run: |
+        kubectl apply -f phase4-local-k8s/backend/backend-deployment.yaml
+        kubectl wait --for=condition=available deployment/backend-deployment --timeout=300s
+
+    - name: Deploy Frontend to Minikube
+      run: |
+        kubectl apply -f phase4-local-k8s/frontend/frontend-deployment.yaml
+        kubectl wait --for=condition=available deployment/frontend-deployment --timeout=300s
+
+    - name: Run Validation Tests
+      run: |
+        chmod +x phase4-local-k8s/full-validation.sh
+        ./phase4-local-k8s/full-validation.sh
+
+    - name: Save Build Logs
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: build-logs
+        path: |
+          /tmp/build-*.log
+          phase4-local-k8s/history/logs/
+
+    - name: Run Health Check
+      if: success()
+      run: |
+        chmod +x phase4-local-k8s/comprehensive-health-check.sh
+        ./phase4-local-k8s/comprehensive-health-check.sh
+
+    - name: Export Minikube Dashboard URL
+      run: |
+        echo "Application is accessible at: $(minikube service frontend-service --url)"
