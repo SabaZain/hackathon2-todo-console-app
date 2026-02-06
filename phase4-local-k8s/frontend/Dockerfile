@@ -1,13 +1,13 @@
 # Multi-stage build for Next.js frontend
 FROM node:18-alpine AS deps
 WORKDIR /app
-COPY package.json package-lock.json ./
+COPY ../../fullstackwebapp/frontend/package.json ../../fullstackwebapp/frontend/package-lock.json ./
 RUN npm ci --only=production
 
 # Build the application
 FROM node:18-alpine AS builder
 WORKDIR /app
-COPY . .
+COPY ../../fullstackwebapp/frontend/ ./
 COPY --from=deps /app/node_modules ./node_modules
 RUN npm run build
 
