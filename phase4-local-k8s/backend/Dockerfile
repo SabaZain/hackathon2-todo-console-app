@@ -18,11 +18,11 @@ RUN apt-get update \
 WORKDIR /app
 
 # Copy requirements first to leverage Docker cache
-COPY ../../requirements.txt .
+COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir -r requirements.txt
 
-# Copy application code from the main backend directory
-COPY ../../backend/ ./
+# Copy application code
+COPY . ./
 
 # Change ownership to non-root user
 RUN chown -R appuser:appuser /app
