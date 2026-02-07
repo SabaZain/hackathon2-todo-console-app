@@ -3,7 +3,8 @@
 FROM node:20-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci --only=production
+# Install ALL dependencies (including devDependencies needed for build)
+RUN npm ci
 
 # Build the application
 FROM node:20-alpine AS builder
@@ -12,21 +13,26 @@ COPY . ./
 COPY --from=deps /app/node_modules ./node_modules
 RUN npm run build
 
-# Production image
+# Production image - minimal runtime dependencies only
 FROM node:20-alpine AS runner
 WORKDIR /app
 
+ENV NODE_ENV=production
+
 # Create non-root user
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nextjs -u 1001
-USER nextjs
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nextjs -u 1001
 
 # Copy necessary files from builder
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
+
+# Copy standalone build output
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+USER nextjs
+
 EXPOSE 3000
-ENV NODE_ENV=production
+
 CMD ["node", "server.js"]
