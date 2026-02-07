@@ -1,18 +1,19 @@
 # Multi-stage build for Next.js frontend
-FROM node:18-alpine AS deps
+# Updated to Node.js 20 for Next.js 16.x compatibility (requires Node >= 20.9.0)
+FROM node:20-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --only=production
 
 # Build the application
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 WORKDIR /app
 COPY . ./
 COPY --from=deps /app/node_modules ./node_modules
 RUN npm run build
 
 # Production image
-FROM node:18-alpine AS runner
+FROM node:20-alpine AS runner
 WORKDIR /app
 
 # Create non-root user
