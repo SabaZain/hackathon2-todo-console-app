@@ -16,9 +16,14 @@ app = FastAPI(
 # Configure CORS middleware
 origins = [
     "http://localhost:3000",
+    "http://localhost:10000",
     "http://127.0.0.1:3000",
+    "http://127.0.0.1:10000",
     "https://hackathon2-todo-console-app-frontend.onrender.com",
     "https://hackathon2-todo-console-app-qu73.vercel.app",
+    # Phase-4 Render deployments
+    "https://todo-frontend-phase4.onrender.com",
+    "https://todo-backend-phase4.onrender.com",
 ]
 
 app.add_middleware(
