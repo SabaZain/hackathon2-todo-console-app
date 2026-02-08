@@ -1,39 +1,43 @@
-# Multi-stage build for Next.js frontend
-# Updated to Node.js 20 for Next.js 16.x compatibility (requires Node >= 20.9.0)
-FROM node:20-alpine AS deps
-WORKDIR /app
-COPY package.json package-lock.json ./
-# Install ALL dependencies (including devDependencies needed for build)
-RUN npm ci
+# ===========================
+# Phase 4 Frontend Dockerfile
+# Next.js 16 + Node 20
+# Render deployment ready
+# ===========================
 
-# Build the application
+# ---------- STEP 1: Build Stage ----------
 FROM node:20-alpine AS builder
 WORKDIR /app
+
+# Copy package.json and package-lock.json for dependency install
+COPY package.json package-lock.json ./
+
+# Install all dependencies (devDependencies required for build)
+RUN npm ci
+
+# Copy full source code
 COPY . ./
-COPY --from=deps /app/node_modules ./node_modules
+
+# Build Next.js production assets
 RUN npm run build
 
-# Production image - minimal runtime dependencies only
+# ---------- STEP 2: Production Stage ----------
 FROM node:20-alpine AS runner
 WORKDIR /app
 
+# Copy package.json and node_modules from builder
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/node_modules ./node_modules
+
+# Copy Next.js build output and public folder
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+
+# Set environment variables for Render
 ENV NODE_ENV=production
-
-# Create non-root user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nextjs -u 1001
-
-# Copy necessary files from builder
-COPY --from=builder --chown=nextjs:nodejs /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
-
-# Copy standalone build output
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-
-USER nextjs
-
 ENV PORT=10000
+
+# Expose the port Render expects
 EXPOSE 10000
 
+# Start the production server
 CMD ["npx", "next", "start", "-p", "10000"]
