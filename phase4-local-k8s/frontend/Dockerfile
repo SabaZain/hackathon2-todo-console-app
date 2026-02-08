@@ -36,4 +36,4 @@ USER nextjs
 ENV PORT=10000
 EXPOSE 10000
 
-CMD ["node", "standalone/server.js"]
+CMD ["npx", "next", "start", "-p", "10000"]
