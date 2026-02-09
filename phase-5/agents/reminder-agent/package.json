@@ -1,0 +1,35 @@
+{
+  "name": "reminder-agent",
+  "version": "1.0.0",
+  "description": "Reminder Agent for Phase 5 - Consumes reminder events and sends notifications",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "watch": "nodemon --watch src --exec ts-node src/index.ts"
+  },
+  "keywords": [
+    "reminder",
+    "agent",
+    "kafka",
+    "notifications"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@prisma/client": "^5.7.0",
+    "kafkajs": "^2.2.4",
+    "winston": "^3.11.0",
+    "node-cron": "^3.0.3",
+    "nodemailer": "^6.9.7"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.5",
+    "@types/node-cron": "^3.0.11",
+    "@types/nodemailer": "^6.4.14",
+    "nodemon": "^3.0.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}

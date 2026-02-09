@@ -155,6 +155,16 @@ class KafkaProducerService {
     );
   }
 
+  async publishReminderEvent(
+    eventType: 'reminder.scheduled' | 'reminder.updated' | 'reminder.sent' | 'reminder.failed' | 'reminder.deleted',
+    userId: string,
+    reminderId: string,
+    reminder: Record<string, any>,
+    correlationId?: string
+  ): Promise<RecordMetadata[]> {
+    return this.publishEvent('reminders', eventType, userId, { reminder }, reminderId, correlationId);
+  }
+
   async publishAuditLog(
     userId: string,
     taskId: string | undefined,

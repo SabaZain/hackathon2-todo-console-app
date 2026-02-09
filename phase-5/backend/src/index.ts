@@ -1,12 +1,13 @@
 import express, { Application } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import { Server } from 'http';
+import { Server, createServer } from 'http';
 import { PrismaClient } from '@prisma/client';
 import config from './config';
 import logger from './config/logger';
 import { kafkaProducer } from './events/kafka-producer';
 import { errorHandler, notFoundHandler } from './api/middleware/error.middleware';
+import { WebSocketService } from './services/websocket.service';
 
 export const prisma = new PrismaClient({
   log: config.nodeEnv === 'development' ? ['query', 'error', 'warn'] : ['error'],
@@ -15,6 +16,7 @@ export const prisma = new PrismaClient({
 class App {
   public app: Application;
   private server?: Server;
+  private wsService?: WebSocketService;
 
   constructor() {
     this.app = express();
@@ -62,11 +64,11 @@ class App {
 
     // API routes
     const taskRoutes = require('./api/routes/tasks.routes').default;
+    const reminderRoutes = require('./api/routes/reminders.routes').default;
+    const auditRoutes = require('./api/routes/audit.routes').default;
     this.app.use('/api/tasks', taskRoutes);
-
-    // Additional routes will be added here
-    // this.app.use('/api/reminders', reminderRoutes);
-    // this.app.use('/api/audit', auditRoutes);
+    this.app.use('/api/reminders', reminderRoutes);
+    this.app.use('/api/audit', auditRoutes);
   }
 
   private initializeErrorHandling(): void {
@@ -84,11 +86,17 @@ class App {
       await kafkaProducer.connect();
       logger.info('Kafka producer connected successfully');
 
-      // Start server
-      this.server = this.app.listen(config.port, () => {
+      // Start HTTP server
+      const httpServer = createServer(this.app);
+      this.server = httpServer.listen(config.port, () => {
         logger.info(`Server running on port ${config.port} in ${config.nodeEnv} mode`);
         logger.info(`Health check: http://localhost:${config.port}/health`);
       });
+
+      // Initialize and start WebSocket service
+      this.wsService = new WebSocketService(httpServer);
+      await this.wsService.start();
+      logger.info('WebSocket service started successfully');
     } catch (error) {
       logger.error('Failed to start server:', error);
       process.exit(1);
@@ -97,6 +105,12 @@ class App {
 
   public async stop(): Promise<void> {
     try {
+      // Stop WebSocket service
+      if (this.wsService) {
+        await this.wsService.stop();
+        logger.info('WebSocket service stopped');
+      }
+
       // Disconnect Kafka
       await kafkaProducer.disconnect();
       logger.info('Kafka producer disconnected');
