@@ -1,0 +1,442 @@
+---
+name: Phase5Tasks
+phase: Phase5
+description: Sequential, actionable tasks for Phase 5 including advanced features, Kafka events, Dapr integration, and cloud deployment. History tracking enabled via AuditAgent.
+---
+
+# Tasks: Phase 5 - Advanced Cloud Deployment & Event-Driven Architecture
+
+**Input**: Design documents from `phase-5/sp.specify` and `phase-5/sp.plan`
+**Prerequisites**: spec.md (completed), plan.md (completed)
+
+**Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
+
+## Format: `[ID] [P?] [Story] Description`
+
+- **[P]**: Can run in parallel (different files, no dependencies)
+- **[Story]**: Which user story this task belongs to (e.g., US1, US2, US3)
+- Include exact file paths in descriptions
+
+## Path Conventions
+
+All Phase 5 work is isolated in the `phase-5/` folder:
+- Backend: `phase-5/backend/src/`
+- Frontend: `phase-5/frontend/src/`
+- Agents: `phase-5/agents/`
+- Infrastructure: `phase-5/infrastructure/`
+
+---
+
+## Phase 1: Setup (Shared Infrastructure)
+
+**Purpose**: Project initialization and basic structure for Phase 5
+
+- [ ] T001 Create Phase 5 project structure per implementation plan in phase-5/
+- [ ] T002 Initialize backend Node.js project with TypeScript in phase-5/backend/
+- [ ] T003 [P] Initialize frontend Next.js project with TypeScript in phase-5/frontend/
+- [ ] T004 [P] Initialize agent projects (4 agents) in phase-5/agents/
+- [ ] T005 [P] Configure ESLint and Prettier for all TypeScript projects
+- [ ] T006 [P] Create .gitignore files for phase-5/ subdirectories
+- [ ] T007 [P] Create README.md for Phase 5 in phase-5/README.md
+- [ ] T008 [P] Copy agent definitions from root .claude/agents/ to phase-5/.claude/agents/ (read-only reference)
+
+---
+
+## Phase 2: Foundational (Blocking Prerequisites)
+
+**Purpose**: Core infrastructure that MUST be complete before ANY user story can be implemented
+
+**⚠️ CRITICAL**: No user story work can begin until this phase is complete
+
+### Infrastructure Setup
+
+- [ ] T009 Set up local Kafka cluster using Docker Compose in phase-5/infrastructure/docker/kafka.yml
+- [ ] T010 [P] Set up PostgreSQL database using Docker Compose in phase-5/infrastructure/docker/postgres.yml
+- [ ] T011 [P] Install and configure Dapr CLI for local development
+- [ ] T012 Create Dapr pub/sub component for Kafka in phase-5/infrastructure/dapr/components/pubsub.yaml
+- [ ] T013 [P] Create Dapr state store component for PostgreSQL in phase-5/infrastructure/dapr/components/statestore.yaml
+- [ ] T014 [P] Create Dapr bindings component for cron reminders in phase-5/infrastructure/dapr/components/bindings.yaml
+- [ ] T015 [P] Create Dapr secrets component for Kubernetes secrets in phase-5/infrastructure/dapr/components/secrets.yaml
+
+### Database Schema
+
+- [ ] T016 Create Prisma schema with Task, RecurrencePattern, Reminder, AuditLog entities in phase-5/backend/prisma/schema.prisma
+- [ ] T017 Generate Prisma client and run initial migration in phase-5/backend/
+- [ ] T018 Create database indexes for efficient querying (user_id, task_id, timestamp) in phase-5/backend/prisma/migrations/
+
+### Backend Foundation
+
+- [ ] T019 Implement Kafka producer service in phase-5/backend/src/events/kafka-producer.ts
+- [ ] T020 [P] Define event schemas for all topics in phase-5/backend/src/events/event-schemas.ts
+- [ ] T021 [P] Implement authentication middleware in phase-5/backend/src/api/middleware/auth.middleware.ts
+- [ ] T022 [P] Implement validation middleware in phase-5/backend/src/api/middleware/validation.middleware.ts
+- [ ] T023 [P] Implement error handling middleware in phase-5/backend/src/api/middleware/error.middleware.ts
+- [ ] T024 Set up Express server with Dapr integration in phase-5/backend/src/index.ts
+- [ ] T025 [P] Configure environment variables and secrets management in phase-5/backend/src/config/
+
+### Frontend Foundation
+
+- [ ] T026 Set up Next.js app structure with TypeScript in phase-5/frontend/src/app/
+- [ ] T027 [P] Configure TailwindCSS in phase-5/frontend/tailwind.config.js
+- [ ] T028 [P] Create API service layer for backend communication in phase-5/frontend/src/services/api.service.ts
+- [ ] T029 [P] Implement authentication context and hooks in phase-5/frontend/src/contexts/auth.context.tsx
+- [ ] T030 [P] Create base layout components in phase-5/frontend/src/components/layout/
+
+**Checkpoint**: Foundation ready - user story implementation can now begin in parallel
+
+---
+
+## Phase 3: User Story 1 - Create and Manage Recurring Tasks (Priority: P1) 🎯 MVP
+
+**Goal**: Users can create tasks that repeat on a schedule (daily, weekly, monthly, custom) and the system automatically generates the next occurrence when completed.
+
+**Independent Test**: Create a recurring task "Daily standup at 9 AM", mark it complete, and verify the next occurrence is automatically created for the next day.
+
+### Implementation for User Story 1
+
+- [ ] T031 [P] [US1] Create RecurrencePattern model in phase-5/backend/src/models/recurrence.model.ts
+- [ ] T032 [P] [US1] Create Task model with recurring support in phase-5/backend/src/models/task.model.ts
+- [ ] T033 [US1] Implement recurrence calculation logic in phase-5/backend/src/services/recurrence-calculator.service.ts
+- [ ] T034 [US1] Implement RecurringTaskService in phase-5/backend/src/services/recurring-task.service.ts
+- [ ] T035 [US1] Implement TaskService with CRUD and recurring support in phase-5/backend/src/services/task.service.ts
+- [ ] T036 [US1] Implement task routes (POST /tasks, GET /tasks, PUT /tasks/:id, DELETE /tasks/:id) in phase-5/backend/src/api/routes/tasks.routes.ts
+- [ ] T037 [US1] Publish task.created and task.completed events to Kafka in phase-5/backend/src/services/task.service.ts
+- [ ] T038 [P] [US1] Create RecurringTaskAgent consumer in phase-5/agents/recurring-task-agent/src/consumer.ts
+- [ ] T039 [US1] Implement next occurrence generation logic in RecurringTaskAgent in phase-5/agents/recurring-task-agent/src/recurrence-calculator.ts
+- [ ] T040 [P] [US1] Create RecurringTaskForm component in phase-5/frontend/src/components/RecurringTaskForm.tsx
+- [ ] T041 [P] [US1] Create TaskList component with recurring task display in phase-5/frontend/src/components/TaskList.tsx
+- [ ] T042 [US1] Integrate recurring task creation in frontend in phase-5/frontend/src/app/tasks/page.tsx
+
+**Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
+
+---
+
+## Phase 4: User Story 2 - Set Due Dates and Receive Reminders (Priority: P1)
+
+**Goal**: Users can assign due dates to tasks and receive timely notifications (push, email, in-app) before tasks are due.
+
+**Independent Test**: Create a task with due date "2026-02-10 3:00 PM" and reminder "1 hour before", then verify the user receives a notification at 2:00 PM.
+
+### Implementation for User Story 2
+
+- [ ] T043 [P] [US2] Create Reminder model in phase-5/backend/src/models/reminder.model.ts
+- [ ] T044 [US2] Implement ReminderService in phase-5/backend/src/services/reminder.service.ts
+- [ ] T045 [US2] Implement reminder routes (POST /reminders, GET /reminders, DELETE /reminders/:id) in phase-5/backend/src/api/routes/reminders.routes.ts
+- [ ] T046 [US2] Publish reminder.scheduled events to Kafka in phase-5/backend/src/services/reminder.service.ts
+- [ ] T047 [US2] Implement Dapr cron binding for reminder checks in phase-5/backend/src/services/reminder-scheduler.service.ts
+- [ ] T048 [P] [US2] Create ReminderAgent consumer in phase-5/agents/reminder-agent/src/consumer.ts
+- [ ] T049 [US2] Implement notification sender (push, email, in-app) in phase-5/agents/reminder-agent/src/notification-sender.ts
+- [ ] T050 [P] [US2] Create ReminderForm component in phase-5/frontend/src/components/ReminderForm.tsx
+- [ ] T051 [US2] Integrate reminder creation in task form in phase-5/frontend/src/components/TaskForm.tsx
+- [ ] T052 [P] [US2] Create notification display component in phase-5/frontend/src/components/NotificationDisplay.tsx
+
+**Checkpoint**: At this point, User Stories 1 AND 2 should both work independently
+
+---
+
+## Phase 5: User Story 3 - Organize Tasks with Priorities and Tags (Priority: P2)
+
+**Goal**: Users can categorize and prioritize tasks using priority levels (High, Medium, Low) and custom tags.
+
+**Independent Test**: Create tasks with different priorities and tags, then verify they can be filtered and sorted by these attributes.
+
+### Implementation for User Story 3
+
+- [ ] T053 [US3] Add priority and tags fields to Task model in phase-5/backend/src/models/task.model.ts
+- [ ] T054 [US3] Update TaskService to support priority and tags in phase-5/backend/src/services/task.service.ts
+- [ ] T055 [US3] Update task routes to accept priority and tags in phase-5/backend/src/api/routes/tasks.routes.ts
+- [ ] T056 [P] [US3] Create priority selector component in phase-5/frontend/src/components/PrioritySelector.tsx
+- [ ] T057 [P] [US3] Create tag input component in phase-5/frontend/src/components/TagInput.tsx
+- [ ] T058 [US3] Integrate priority and tags in TaskForm in phase-5/frontend/src/components/TaskForm.tsx
+- [ ] T059 [US3] Update TaskList to display priority and tags in phase-5/frontend/src/components/TaskList.tsx
+
+**Checkpoint**: All user stories 1, 2, and 3 should now be independently functional
+
+---
+
+## Phase 6: User Story 4 - Search, Filter, and Sort Tasks (Priority: P2)
+
+**Goal**: Users can quickly find specific tasks using search and filter/sort capabilities.
+
+**Independent Test**: Create 20+ tasks with various attributes, then search for "meeting", filter by "High priority", and sort by "Due date ascending".
+
+### Implementation for User Story 4
+
+- [ ] T060 [US4] Implement SearchService with full-text search in phase-5/backend/src/services/search.service.ts
+- [ ] T061 [US4] Implement filter and sort logic in TaskService in phase-5/backend/src/services/task.service.ts
+- [ ] T062 [US4] Add search, filter, sort query parameters to task routes in phase-5/backend/src/api/routes/tasks.routes.ts
+- [ ] T063 [P] [US4] Create SearchBar component in phase-5/frontend/src/components/SearchBar.tsx
+- [ ] T064 [P] [US4] Create FilterPanel component in phase-5/frontend/src/components/FilterPanel.tsx
+- [ ] T065 [US4] Integrate search, filter, sort in task list page in phase-5/frontend/src/app/tasks/page.tsx
+- [ ] T066 [US4] Add URL query parameters for search/filter/sort state in phase-5/frontend/src/app/tasks/page.tsx
+
+**Checkpoint**: All user stories 1-4 should now be independently functional
+
+---
+
+## Phase 7: User Story 5 - Real-Time Task Synchronization Across Devices (Priority: P2)
+
+**Goal**: Users working on multiple devices see task updates in real-time without manual refresh.
+
+**Independent Test**: Open the app on two devices, create a task on device A, and verify it appears instantly on device B without refresh.
+
+### Implementation for User Story 5
+
+- [ ] T067 [US5] Set up WebSocket server with Socket.io in phase-5/backend/src/websocket/server.ts
+- [ ] T068 [US5] Implement connection management in phase-5/backend/src/websocket/connection-manager.ts
+- [ ] T069 [US5] Publish task.updated events to task-updates Kafka topic in phase-5/backend/src/services/task.service.ts
+- [ ] T070 [P] [US5] Create RealTimeSyncAgent consumer in phase-5/agents/realtime-sync-agent/src/consumer.ts
+- [ ] T071 [US5] Implement WebSocket broadcaster in phase-5/agents/realtime-sync-agent/src/websocket-broadcaster.ts
+- [ ] T072 [P] [US5] Create WebSocket service in frontend in phase-5/frontend/src/services/websocket.service.ts
+- [ ] T073 [P] [US5] Create useWebSocket hook in phase-5/frontend/src/hooks/useWebSocket.ts
+- [ ] T074 [P] [US5] Create useRealTimeSync hook in phase-5/frontend/src/hooks/useRealTimeSync.ts
+- [ ] T075 [US5] Integrate real-time sync in TaskList component in phase-5/frontend/src/components/TaskList.tsx
+- [ ] T076 [US5] Implement conflict resolution for simultaneous updates in phase-5/frontend/src/services/conflict-resolver.ts
+
+**Checkpoint**: All user stories 1-5 should now be independently functional
+
+---
+
+## Phase 8: User Story 6 - View Complete Task History and Audit Trail (Priority: P3)
+
+**Goal**: Users and administrators can view the complete history of all task operations for accountability and troubleshooting.
+
+**Independent Test**: Perform various task operations (create, update, complete, delete), then view the audit log to verify all operations are recorded.
+
+### Implementation for User Story 6
+
+- [ ] T077 [P] [US6] Create AuditLog model in phase-5/backend/src/models/audit-log.model.ts
+- [ ] T078 [US6] Publish all task events to audit-logs Kafka topic in phase-5/backend/src/services/task.service.ts
+- [ ] T079 [P] [US6] Create AuditAgent consumer in phase-5/agents/audit-agent/src/consumer.ts
+- [ ] T080 [US6] Implement audit logger with immutable storage in phase-5/agents/audit-agent/src/audit-logger.ts
+- [ ] T081 [US6] Implement audit query service in phase-5/backend/src/services/audit.service.ts
+- [ ] T082 [US6] Implement audit routes (GET /audit, GET /audit/:taskId) in phase-5/backend/src/api/routes/audit.routes.ts
+- [ ] T083 [P] [US6] Create AuditLog component in phase-5/frontend/src/components/AuditLog.tsx
+- [ ] T084 [US6] Create audit log page in phase-5/frontend/src/app/audit/page.tsx
+- [ ] T085 [US6] Implement audit log filtering and search in phase-5/frontend/src/app/audit/page.tsx
+
+**Checkpoint**: All user stories should now be independently functional
+
+---
+
+## Phase 9: Deployment Infrastructure
+
+**Purpose**: Set up deployment infrastructure for local and cloud environments
+
+### Docker Containerization
+
+- [ ] T086 [P] Create Dockerfile for backend in phase-5/backend/Dockerfile
+- [ ] T087 [P] Create Dockerfile for frontend in phase-5/frontend/Dockerfile
+- [ ] T088 [P] Create Dockerfile for AuditAgent in phase-5/agents/audit-agent/Dockerfile
+- [ ] T089 [P] Create Dockerfile for RecurringTaskAgent in phase-5/agents/recurring-task-agent/Dockerfile
+- [ ] T090 [P] Create Dockerfile for ReminderAgent in phase-5/agents/reminder-agent/Dockerfile
+- [ ] T091 [P] Create Dockerfile for RealTimeSyncAgent in phase-5/agents/realtime-sync-agent/Dockerfile
+- [ ] T092 Create Docker Compose file for local development in phase-5/docker-compose.yml
+
+### Minikube Deployment
+
+- [ ] T093 Create Kubernetes namespace manifest in phase-5/infrastructure/kubernetes/minikube/namespace.yaml
+- [ ] T094 [P] Create Kafka deployment manifest in phase-5/infrastructure/kubernetes/minikube/kafka.yaml
+- [ ] T095 [P] Create PostgreSQL deployment manifest in phase-5/infrastructure/kubernetes/minikube/postgres.yaml
+- [ ] T096 [P] Create backend deployment manifest in phase-5/infrastructure/kubernetes/minikube/backend.yaml
+- [ ] T097 [P] Create frontend deployment manifest in phase-5/infrastructure/kubernetes/minikube/frontend.yaml
+- [ ] T098 [P] Create agent deployment manifests in phase-5/infrastructure/kubernetes/minikube/agents/
+- [ ] T099 Create Dapr component manifests for Minikube in phase-5/infrastructure/kubernetes/minikube/dapr-components/
+- [ ] T100 Create ConfigMaps and Secrets for Minikube in phase-5/infrastructure/kubernetes/minikube/config/
+- [ ] T101 Create Ingress manifest for Minikube in phase-5/infrastructure/kubernetes/minikube/ingress.yaml
+- [ ] T102 Create deployment script for Minikube in phase-5/infrastructure/scripts/deploy-minikube.sh
+
+### Cloud Deployment (DOKS/GKE/AKS)
+
+- [ ] T103 Create Terraform configuration for cloud infrastructure in phase-5/infrastructure/terraform/
+- [ ] T104 [P] Create Helm chart for backend in phase-5/infrastructure/helm/backend/
+- [ ] T105 [P] Create Helm chart for frontend in phase-5/infrastructure/helm/frontend/
+- [ ] T106 [P] Create Helm chart for agents in phase-5/infrastructure/helm/agents/
+- [ ] T107 Create Kubernetes manifests for cloud deployment in phase-5/infrastructure/kubernetes/cloud/
+- [ ] T108 Create HorizontalPodAutoscaler manifests in phase-5/infrastructure/kubernetes/cloud/hpa/
+- [ ] T109 Create deployment script for cloud in phase-5/infrastructure/scripts/deploy-cloud.sh
+- [ ] T110 Configure cloud-specific secrets and ConfigMaps in phase-5/infrastructure/kubernetes/cloud/config/
+
+---
+
+## Phase 10: CI/CD and Monitoring
+
+**Purpose**: Set up automated CI/CD pipeline and monitoring infrastructure
+
+### CI/CD Pipeline
+
+- [ ] T111 Create GitHub Actions workflow for CI in phase-5/.github/workflows/ci.yaml
+- [ ] T112 [P] Create GitHub Actions workflow for CD staging in phase-5/.github/workflows/cd-staging.yaml
+- [ ] T113 [P] Create GitHub Actions workflow for CD production in phase-5/.github/workflows/cd-production.yaml
+- [ ] T114 Configure Docker image security scanning (Trivy) in CI workflow
+- [ ] T115 [P] Configure automated testing in CI workflow
+- [ ] T116 Create deployment approval workflow in phase-5/.github/workflows/approval.yaml
+- [ ] T117 Create rollback workflow in phase-5/.github/workflows/rollback.yaml
+
+### Monitoring and Observability
+
+- [ ] T118 Deploy Prometheus for metrics collection in phase-5/infrastructure/monitoring/prometheus/
+- [ ] T119 [P] Deploy Grafana for dashboards in phase-5/infrastructure/monitoring/grafana/
+- [ ] T120 [P] Create Grafana dashboards for system health in phase-5/infrastructure/monitoring/grafana/dashboards/
+- [ ] T121 [P] Deploy Jaeger for distributed tracing in phase-5/infrastructure/monitoring/jaeger/
+- [ ] T122 [P] Deploy ELK stack or Loki for log aggregation in phase-5/infrastructure/monitoring/elk/
+- [ ] T123 Configure Prometheus Alertmanager in phase-5/infrastructure/monitoring/prometheus/alertmanager.yaml
+- [ ] T124 [P] Create alert rules for critical metrics in phase-5/infrastructure/monitoring/prometheus/alerts/
+- [ ] T125 Configure notification channels (Slack, email) in phase-5/infrastructure/monitoring/alertmanager/config.yaml
+- [ ] T126 [P] Instrument backend with Prometheus metrics in phase-5/backend/src/metrics/
+- [ ] T127 [P] Instrument agents with Prometheus metrics in phase-5/agents/*/src/metrics/
+- [ ] T128 Configure Dapr observability integration in phase-5/infrastructure/dapr/configuration/observability.yaml
+
+---
+
+## Phase 11: Polish & Cross-Cutting Concerns
+
+**Purpose**: Improvements that affect multiple user stories and final documentation
+
+### Testing
+
+- [ ] T129 [P] Write unit tests for backend services in phase-5/backend/tests/unit/
+- [ ] T130 [P] Write integration tests for API endpoints in phase-5/backend/tests/integration/
+- [ ] T131 [P] Write E2E tests for frontend flows in phase-5/frontend/tests/e2e/
+- [ ] T132 [P] Write tests for agents in phase-5/agents/*/tests/
+- [ ] T133 Run load tests with k6 or Artillery for 10,000 concurrent users
+- [ ] T134 Validate audit trail captures 100% of operations
+- [ ] T135 Validate real-time sync latency < 1 second
+- [ ] T136 Validate recurring task generation accuracy
+
+### Documentation
+
+- [ ] T137 [P] Create architecture documentation in phase-5/docs/architecture.md
+- [ ] T138 [P] Create deployment documentation in phase-5/docs/deployment.md
+- [ ] T139 [P] Create monitoring documentation in phase-5/docs/monitoring.md
+- [ ] T140 [P] Create runbooks for common operations in phase-5/docs/runbooks/
+- [ ] T141 Update Phase 5 README with setup instructions in phase-5/README.md
+- [ ] T142 Create API documentation with OpenAPI spec in phase-5/docs/api/
+- [ ] T143 Create quickstart guide in phase-5/quickstart.md
+
+### Security and Performance
+
+- [ ] T144 Implement rate limiting on API endpoints in phase-5/backend/src/api/middleware/rate-limit.middleware.ts
+- [ ] T145 [P] Implement input validation and sanitization in phase-5/backend/src/api/middleware/validation.middleware.ts
+- [ ] T146 [P] Configure CORS policies in phase-5/backend/src/config/cors.ts
+- [ ] T147 [P] Implement database connection pooling in phase-5/backend/src/config/database.ts
+- [ ] T148 [P] Implement caching for frequently accessed data in phase-5/backend/src/services/cache.service.ts
+- [ ] T149 Optimize database queries with proper indexing
+- [ ] T150 Run security audit and fix vulnerabilities
+
+---
+
+## Dependencies & Execution Order
+
+### Phase Dependencies
+
+- **Setup (Phase 1)**: No dependencies - can start immediately
+- **Foundational (Phase 2)**: Depends on Setup completion - BLOCKS all user stories
+- **User Stories (Phase 3-8)**: All depend on Foundational phase completion
+  - User stories can then proceed in parallel (if staffed)
+  - Or sequentially in priority order (P1 → P2 → P3)
+- **Deployment (Phase 9)**: Can start after foundational infrastructure is ready
+- **CI/CD (Phase 10)**: Depends on deployment infrastructure
+- **Polish (Phase 11)**: Depends on all desired user stories being complete
+
+### User Story Dependencies
+
+- **User Story 1 (P1)**: Can start after Foundational (Phase 2) - No dependencies on other stories
+- **User Story 2 (P1)**: Can start after Foundational (Phase 2) - No dependencies on other stories
+- **User Story 3 (P2)**: Can start after Foundational (Phase 2) - Extends US1 but independently testable
+- **User Story 4 (P2)**: Can start after Foundational (Phase 2) - Works with all stories but independently testable
+- **User Story 5 (P2)**: Can start after Foundational (Phase 2) - Enhances all stories but independently testable
+- **User Story 6 (P3)**: Can start after Foundational (Phase 2) - Tracks all stories but independently testable
+
+### Within Each User Story
+
+- Models before services
+- Services before routes/endpoints
+- Backend before frontend
+- Core implementation before integration
+- Story complete before moving to next priority
+
+### Parallel Opportunities
+
+- All Setup tasks marked [P] can run in parallel
+- All Foundational tasks marked [P] can run in parallel (within Phase 2)
+- Once Foundational phase completes, all user stories can start in parallel (if team capacity allows)
+- Models within a story marked [P] can run in parallel
+- Different user stories can be worked on in parallel by different team members
+- All Docker containerization tasks can run in parallel
+- All Kubernetes manifest creation tasks can run in parallel
+- All monitoring setup tasks can run in parallel
+
+---
+
+## Implementation Strategy
+
+### MVP First (User Stories 1 & 2 Only)
+
+1. Complete Phase 1: Setup
+2. Complete Phase 2: Foundational (CRITICAL - blocks all stories)
+3. Complete Phase 3: User Story 1 (Recurring Tasks)
+4. Complete Phase 4: User Story 2 (Due Dates & Reminders)
+5. **STOP and VALIDATE**: Test User Stories 1 & 2 independently
+6. Deploy to Minikube for local testing
+7. Deploy/demo if ready
+
+### Incremental Delivery
+
+1. Complete Setup + Foundational → Foundation ready
+2. Add User Story 1 → Test independently → Deploy/Demo (MVP!)
+3. Add User Story 2 → Test independently → Deploy/Demo
+4. Add User Story 3 → Test independently → Deploy/Demo
+5. Add User Story 4 → Test independently → Deploy/Demo
+6. Add User Story 5 → Test independently → Deploy/Demo
+7. Add User Story 6 → Test independently → Deploy/Demo
+8. Each story adds value without breaking previous stories
+
+### Parallel Team Strategy
+
+With multiple developers:
+
+1. Team completes Setup + Foundational together
+2. Once Foundational is done:
+   - Developer A: User Story 1 (Recurring Tasks)
+   - Developer B: User Story 2 (Reminders)
+   - Developer C: User Story 3 (Priorities & Tags)
+   - Developer D: User Story 4 (Search/Filter/Sort)
+   - Developer E: User Story 5 (Real-Time Sync)
+   - Developer F: User Story 6 (Audit Trail)
+3. Stories complete and integrate independently
+
+---
+
+## Notes
+
+- [P] tasks = different files, no dependencies
+- [Story] label maps task to specific user story for traceability
+- Each user story should be independently completable and testable
+- All work must remain in phase-5/ folder (Phase 1-4 files untouched)
+- AuditAgent tracks 100% of task operations (NON-NEGOTIABLE)
+- Commit after each task or logical group
+- Stop at any checkpoint to validate story independently
+- Avoid: vague tasks, same file conflicts, cross-story dependencies that break independence
+
+---
+
+## Total Task Count
+
+- **Phase 1 (Setup)**: 8 tasks
+- **Phase 2 (Foundational)**: 22 tasks
+- **Phase 3 (US1 - Recurring Tasks)**: 12 tasks
+- **Phase 4 (US2 - Reminders)**: 10 tasks
+- **Phase 5 (US3 - Priorities & Tags)**: 7 tasks
+- **Phase 6 (US4 - Search/Filter/Sort)**: 7 tasks
+- **Phase 7 (US5 - Real-Time Sync)**: 10 tasks
+- **Phase 8 (US6 - Audit Trail)**: 9 tasks
+- **Phase 9 (Deployment)**: 25 tasks
+- **Phase 10 (CI/CD & Monitoring)**: 21 tasks
+- **Phase 11 (Polish)**: 22 tasks
+
+**Total**: 150 tasks
+
+---
+
+**Next Steps**: Run `/sp.implement` to execute implementation tasks following this task breakdown.

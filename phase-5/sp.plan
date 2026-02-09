@@ -1,0 +1,821 @@
+---
+name: Phase5Plan
+phase: Phase5
+description: Detailed implementation plan for Phase 5 advanced features, event-driven architecture, Dapr integration, history tracking, deployment, and CI/CD. Strictly isolated from Phases 1-4.
+created: 2026-02-09
+status: Draft
+---
+
+# Implementation Plan: Phase 5 - Advanced Cloud Deployment & Event-Driven Architecture
+
+**Phase**: Phase 5 | **Date**: 2026-02-09 | **Spec**: [phase-5/sp.specify](sp.specify)
+**Input**: Phase 5 specification from `phase-5/sp.specify`
+
+## Summary
+
+Phase 5 transforms the Todo application into a production-ready, cloud-native, event-driven system. The primary requirements include:
+
+1. **Advanced Task Features**: Recurring tasks with automatic next occurrence generation, due dates with multi-channel reminders (push/email/in-app), priorities (High/Medium/Low), custom tags, and comprehensive search/filter/sort capabilities
+2. **Event-Driven Architecture**: Kafka-based event streaming for all task operations (create, update, delete, complete) with 4 topics: task-events, task-updates, reminders, audit-logs
+3. **Complete Audit Trail**: 100% capture of all task operations via AuditAgent with immutable logging, indexed storage, and queryable history
+4. **Dapr Integration**: Distributed application runtime for pub/sub (Kafka), state management, scheduled bindings (cron reminders), secrets management, and service invocation
+5. **Real-Time Synchronization**: WebSocket-based broadcasting of task updates to all connected clients within 1 second
+6. **Kubernetes Deployment**: Local development on Minikube, production deployment on cloud providers (DOKS/GKE/AKS) with horizontal scaling and zero-downtime updates
+7. **CI/CD Pipeline**: GitHub Actions for automated build, test, security scanning, and deployment to staging/production
+8. **Observability**: Prometheus metrics, Grafana dashboards, Jaeger distributed tracing, ELK/Loki log aggregation, and alerting
+
+**Technical Approach**: Microservices architecture with Dapr sidecars, Kafka event broker, PostgreSQL/Neon DB for persistence, WebSocket server for real-time sync, and 4 specialized agents (Audit, Recurring, Reminder, RealTimeSync) consuming events asynchronously.
+
+## Technical Context
+
+**Language/Version**:
+- Backend: Node.js 18+ (TypeScript)
+- Frontend: Next.js 14+ (React 18, TypeScript)
+- Agents: Node.js 18+ (TypeScript) or Python 3.11+
+
+**Primary Dependencies**:
+- Backend: Express.js, Prisma ORM, Kafkajs, Socket.io, Dapr SDK
+- Frontend: Next.js, React, Socket.io-client, TailwindCSS
+- Agents: Kafkajs (Node.js) or confluent-kafka (Python), Dapr SDK
+- Infrastructure: Kafka, PostgreSQL/Neon DB, Dapr, Kubernetes, Helm
+
+**Storage**:
+- Primary: PostgreSQL/Neon DB (tasks, users, reminders)
+- Audit: Dedicated audit_logs table (immutable, append-only)
+- Cache: Dapr state store (Redis-backed for distributed caching)
+- Events: Kafka topics with 7-day retention
+
+**Testing**:
+- Unit: Jest (Node.js), pytest (Python)
+- Integration: Supertest (API), Kafka test containers
+- E2E: Playwright (frontend flows)
+- Load: k6 or Artillery (10,000 concurrent users target)
+
+**Target Platform**:
+- Local: Minikube (Kubernetes 1.28+)
+- Production: DigitalOcean DOKS / Google GKE / Azure AKS (Kubernetes 1.28+)
+- Container Runtime: Docker 24+
+
+**Project Type**: Web application (frontend + backend + agents)
+
+**Performance Goals**:
+- API latency: p95 < 500ms, p99 < 1s
+- Event processing: 1,000 events/second
+- Real-time sync: < 1 second propagation
+- Search/filter: < 2 seconds for 10,000+ tasks
+- Concurrent users: 10,000 without degradation
+
+**Constraints**:
+- Zero-downtime deployments required
+- 100% audit capture (no data loss)
+- 99.9% uptime SLA
+- GDPR/CCPA compliance for audit logs
+- Kafka message ordering per partition
+- WebSocket connection limits: 10,000 per server instance
+
+**Scale/Scope**:
+- Users: 10,000 concurrent, 100,000 total
+- Tasks: 1,000,000+ total, 10,000+ per user
+- Events: 1,000/second sustained, 5,000/second peak
+- Agents: 4 specialized agents, horizontally scalable
+- Services: 5 microservices (backend, frontend, 4 agents)
+- Deployment: 3 environments (local, staging, production)
+
+## Constitution Check
+
+*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+
+Based on Phase 5 Constitution (`phase-5/sp.constitution`):
+
+### Phase Isolation (CRITICAL - NON-NEGOTIABLE)
+- ✅ All Phase 5 work contained in `phase-5/` folder
+- ✅ No modifications to Phases 1-4 files or folders
+- ✅ Agents/skills copied from root `.claude/` if needed, originals untouched
+- ✅ Phase 5-specific agents created in `phase-5/.claude/agents/` if customization needed
+
+### Event-Driven Architecture (CRITICAL - NON-NEGOTIABLE)
+- ✅ All task operations publish events to Kafka topics
+- ✅ Events include: event_id, timestamp, user_id, task_id, correlation_id, payload
+- ✅ Atomic event publishing with transactional outbox pattern if needed
+- ✅ Event processing with retries and dead letter queues
+
+### Audit and Compliance (CRITICAL - NON-NEGOTIABLE)
+- ✅ AuditAgent captures 100% of task operations
+- ✅ Audit logs are immutable (append-only, no updates/deletes)
+- ✅ Audit logs indexed for efficient querying
+- ✅ Correlation IDs for distributed tracing
+- ✅ 90-day retention policy (configurable)
+- ✅ GDPR/CCPA compliance support
+
+### Scalability and Reliability
+- ✅ Horizontal scaling for all services
+- ✅ Health checks and readiness probes
+- ✅ Circuit breakers for service failures
+- ✅ Zero-downtime deployments with rolling updates
+
+### Security
+- ✅ HTTPS for all external communication
+- ✅ Authentication and authorization for all API requests
+- ✅ Encryption at rest and in transit
+- ✅ Docker image vulnerability scanning
+- ✅ Principle of least privilege for service accounts
+
+**Gate Status**: ✅ PASSED - All constitutional requirements met
+
+## Project Structure
+
+### Documentation (Phase 5)
+
+```text
+phase-5/
+├── sp.constitution          # Phase 5 governance (completed)
+├── sp.specify              # Phase 5 specification (completed)
+├── sp.plan                 # This file (in progress)
+├── sp.tasks                # Task breakdown (to be created by /sp.tasks)
+├── sp.implement            # Implementation execution (to be created by /sp.implement)
+├── checklists/
+│   └── requirements.md     # Spec quality checklist (completed)
+├── history/
+│   └── prompts/
+│       ├── constitution/   # PHR-001
+│       └── phase-5/        # PHR-002 (spec)
+├── research.md             # Phase 0 output (to be created)
+├── data-model.md           # Phase 1 output (to be created)
+├── quickstart.md           # Phase 1 output (to be created)
+└── contracts/              # Phase 1 output (to be created)
+    ├── openapi.yaml
+    ├── events/
+    │   ├── task-events.schema.json
+    │   ├── task-updates.schema.json
+    │   ├── reminders.schema.json
+    │   └── audit-logs.schema.json
+    └── dapr/
+        ├── pubsub.yaml
+        ├── statestore.yaml
+        ├── bindings.yaml
+        └── secrets.yaml
+```
+
+### Source Code (Phase 5 - Isolated from Phases 1-4)
+
+```text
+phase-5/
+├── backend/
+│   ├── src/
+│   │   ├── models/
+│   │   │   ├── task.model.ts
+│   │   │   ├── recurrence.model.ts
+│   │   │   ├── reminder.model.ts
+│   │   │   └── audit-log.model.ts
+│   │   ├── services/
+│   │   │   ├── task.service.ts
+│   │   │   ├── recurring-task.service.ts
+│   │   │   ├── reminder.service.ts
+│   │   │   ├── search.service.ts
+│   │   │   └── event-publisher.service.ts
+│   │   ├── api/
+│   │   │   ├── routes/
+│   │   │   │   ├── tasks.routes.ts
+│   │   │   │   ├── reminders.routes.ts
+│   │   │   │   └── audit.routes.ts
+│   │   │   └── middleware/
+│   │   │       ├── auth.middleware.ts
+│   │   │       └── validation.middleware.ts
+│   │   ├── events/
+│   │   │   ├── kafka-producer.ts
+│   │   │   └── event-schemas.ts
+│   │   └── index.ts
+│   ├── prisma/
+│   │   └── schema.prisma
+│   ├── tests/
+│   │   ├── unit/
+│   │   ├── integration/
+│   │   └── e2e/
+│   ├── Dockerfile
+│   └── package.json
+│
+├── frontend/
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── tasks/
+│   │   │   ├── reminders/
+│   │   │   └── audit/
+│   │   ├── components/
+│   │   │   ├── TaskList.tsx
+│   │   │   ├── TaskForm.tsx
+│   │   │   ├── RecurringTaskForm.tsx
+│   │   │   ├── ReminderForm.tsx
+│   │   │   ├── SearchBar.tsx
+│   │   │   └── FilterPanel.tsx
+│   │   ├── hooks/
+│   │   │   ├── useWebSocket.ts
+│   │   │   ├── useTasks.ts
+│   │   │   └── useRealTimeSync.ts
+│   │   └── services/
+│   │       ├── api.service.ts
+│   │       └── websocket.service.ts
+│   ├── tests/
+│   ├── Dockerfile
+│   └── package.json
+│
+├── agents/
+│   ├── audit-agent/
+│   │   ├── src/
+│   │   │   ├── consumer.ts
+│   │   │   ├── audit-logger.ts
+│   │   │   └── index.ts
+│   │   ├── tests/
+│   │   ├── Dockerfile
+│   │   └── package.json
+│   ├── recurring-task-agent/
+│   │   ├── src/
+│   │   │   ├── consumer.ts
+│   │   │   ├── recurrence-calculator.ts
+│   │   │   └── index.ts
+│   │   ├── tests/
+│   │   ├── Dockerfile
+│   │   └── package.json
+│   ├── reminder-agent/
+│   │   ├── src/
+│   │   │   ├── consumer.ts
+│   │   │   ├── notification-sender.ts
+│   │   │   └── index.ts
+│   │   ├── tests/
+│   │   ├── Dockerfile
+│   │   └── package.json
+│   └── realtime-sync-agent/
+│       ├── src/
+│       │   ├── consumer.ts
+│       │   ├── websocket-broadcaster.ts
+│       │   └── index.ts
+│       ├── tests/
+│       ├── Dockerfile
+│       └── package.json
+│
+├── infrastructure/
+│   ├── kubernetes/
+│   │   ├── minikube/
+│   │   │   ├── kafka.yaml
+│   │   │   ├── postgres.yaml
+│   │   │   ├── dapr-components/
+│   │   │   ├── backend.yaml
+│   │   │   ├── frontend.yaml
+│   │   │   └── agents/
+│   │   └── cloud/
+│   │       ├── terraform/
+│   │       ├── helm/
+│   │       └── manifests/
+│   ├── dapr/
+│   │   ├── components/
+│   │   │   ├── pubsub.yaml
+│   │   │   ├── statestore.yaml
+│   │   │   ├── bindings.yaml
+│   │   │   └── secrets.yaml
+│   │   └── configuration/
+│   └── monitoring/
+│       ├── prometheus/
+│       ├── grafana/
+│       ├── jaeger/
+│       └── elk/
+│
+├── .github/
+│   └── workflows/
+│       ├── ci.yaml
+│       ├── cd-staging.yaml
+│       └── cd-production.yaml
+│
+└── docs/
+    ├── architecture.md
+    ├── deployment.md
+    ├── monitoring.md
+    └── runbooks/
+```
+
+**Structure Decision**: Web application with microservices architecture. Backend and frontend are separate services with their own containers. Four specialized agents run as independent services consuming Kafka events. All services have Dapr sidecars for cross-cutting concerns. Infrastructure as code using Kubernetes manifests and Terraform for cloud provisioning.
+
+## Complexity Tracking
+
+> **Fill ONLY if Constitution Check has violations that must be justified**
+
+No violations - all constitutional requirements are met.
+
+## Phase 0: Research & Technology Decisions
+
+### Research Tasks
+
+#### R1: Kafka Setup and Configuration
+**Goal**: Determine optimal Kafka configuration for Phase 5 requirements
+**Priority**: High
+**Responsible**: Infrastructure team / DevOps agent
+
+**Research Questions**:
+1. Kafka cluster sizing for 1,000 events/second sustained, 5,000/second peak
+2. Partition strategy for task-events, task-updates, reminders, audit-logs topics
+3. Replication factor and durability guarantees
+4. Consumer group configuration for agents
+5. Retention policies per topic
+6. Managed Kafka options (Confluent Cloud, AWS MSK, Azure Event Hubs) vs self-hosted
+
+**Deliverables**:
+- Kafka configuration recommendations
+- Topic creation scripts
+- Consumer group setup
+- Performance benchmarks
+
+**Dependencies**: None
+
+---
+
+#### R2: Dapr Integration Patterns
+**Goal**: Establish Dapr integration patterns for all Phase 5 services
+**Priority**: High
+**Responsible**: Backend team / Dapr specialist
+
+**Research Questions**:
+1. Dapr pub/sub component configuration for Kafka
+2. Dapr state store options (Redis, PostgreSQL, Cosmos DB)
+3. Dapr bindings for cron-based reminders
+4. Dapr secrets management (Kubernetes secrets, Azure Key Vault, AWS Secrets Manager)
+5. Dapr service invocation patterns for inter-service communication
+6. Dapr observability integration (Prometheus, Jaeger)
+
+**Deliverables**:
+- Dapr component YAML files
+- Integration code examples
+- Best practices documentation
+- Performance considerations
+
+**Dependencies**: None
+
+---
+
+#### R3: WebSocket Architecture for Real-Time Sync
+**Goal**: Design WebSocket architecture for 10,000 concurrent connections
+**Priority**: High
+**Responsible**: Backend team / Real-time specialist
+
+**Research Questions**:
+1. WebSocket library selection (Socket.io, ws, uWebSockets.js)
+2. Connection management and scaling strategy
+3. Message broadcasting patterns
+4. Reconnection and offline handling
+5. Load balancing WebSocket connections
+6. Integration with Kafka for event consumption
+
+**Deliverables**:
+- WebSocket server architecture
+- Connection management strategy
+- Broadcasting implementation
+- Load testing results
+
+**Dependencies**: None
+
+---
+
+#### R4: Recurring Task Calculation Logic
+**Goal**: Implement robust recurrence calculation for all patterns
+**Priority**: High
+**Responsible**: Backend team / RecurringTaskAgent
+
+**Research Questions**:
+1. Recurrence rule parsing (iCalendar RFC 5545 vs custom)
+2. Edge case handling (month-end dates, leap years, DST)
+3. Timezone support and conversion
+4. Next occurrence calculation algorithms
+5. Recurrence end conditions (end date, occurrence count)
+
+**Deliverables**:
+- Recurrence calculation library
+- Test cases for edge cases
+- Timezone handling strategy
+- Performance benchmarks
+
+**Dependencies**: None
+
+---
+
+#### R5: Audit Log Storage and Querying
+**Goal**: Design audit log storage for immutability and performance
+**Priority**: High
+**Responsible**: AuditAgent / Database team
+
+**Research Questions**:
+1. Database schema for audit logs (single table vs partitioned)
+2. Indexing strategy for efficient querying
+3. Immutability enforcement (triggers, constraints, append-only)
+4. Retention policy implementation (archival, deletion)
+5. Query patterns and optimization
+6. GDPR/CCPA compliance (right to be forgotten)
+
+**Deliverables**:
+- Audit log schema
+- Indexing strategy
+- Query examples
+- Retention policy implementation
+
+**Dependencies**: None
+
+---
+
+#### R6: Kubernetes Deployment Strategy
+**Goal**: Define deployment strategy for Minikube and cloud providers
+**Priority**: Medium
+**Responsible**: DevOps team / Infrastructure agent
+
+**Research Questions**:
+1. Minikube setup and configuration
+2. Cloud provider selection (DOKS vs GKE vs AKS)
+3. Helm charts vs raw manifests
+4. Resource limits and requests per service
+5. Horizontal Pod Autoscaler (HPA) configuration
+6. Ingress controller selection (Nginx, Traefik, cloud-native)
+7. Zero-downtime deployment strategies (rolling update, blue-green, canary)
+
+**Deliverables**:
+- Kubernetes manifests
+- Helm charts (if applicable)
+- Deployment scripts
+- Rollback procedures
+
+**Dependencies**: None
+
+---
+
+#### R7: CI/CD Pipeline Design
+**Goal**: Design GitHub Actions pipeline for automated deployment
+**Priority**: Medium
+**Responsible**: DevOps team / CI/CD specialist
+
+**Research Questions**:
+1. GitHub Actions workflow structure
+2. Docker image building and caching
+3. Security scanning tools (Trivy, Snyk, Grype)
+4. Test execution strategy (parallel, sequential)
+5. Deployment approval process
+6. Rollback automation
+7. Notification channels (Slack, email)
+
+**Deliverables**:
+- GitHub Actions workflows
+- Deployment scripts
+- Security scanning configuration
+- Notification setup
+
+**Dependencies**: R6 (Kubernetes deployment strategy)
+
+---
+
+#### R8: Monitoring and Observability Stack
+**Goal**: Set up comprehensive monitoring and observability
+**Priority**: Medium
+**Responsible**: DevOps team / SRE
+
+**Research Questions**:
+1. Prometheus metrics collection and scraping
+2. Grafana dashboard design
+3. Jaeger distributed tracing setup
+4. ELK vs Loki for log aggregation
+5. Alerting rules and thresholds
+6. On-call rotation and escalation
+7. Runbook creation
+
+**Deliverables**:
+- Prometheus configuration
+- Grafana dashboards
+- Jaeger setup
+- Log aggregation configuration
+- Alert rules
+- Runbooks
+
+**Dependencies**: R6 (Kubernetes deployment)
+
+---
+
+### Research Consolidation
+
+**Output**: `phase-5/research.md` containing:
+- All research findings
+- Technology decisions with rationale
+- Alternatives considered and rejected
+- Configuration recommendations
+- Best practices and patterns
+- Performance benchmarks
+- Risk assessment
+
+## Phase 1: Design & Contracts
+
+### D1: Data Model Design
+**Goal**: Define complete data model for Phase 5 features
+**Priority**: High
+**Responsible**: Backend team / Data architect
+
+**Tasks**:
+1. Design Task entity with recurring task support
+2. Design RecurrencePattern entity
+3. Design Reminder entity
+4. Design AuditLog entity (immutable)
+5. Design Event entity (Kafka payload)
+6. Define relationships and constraints
+7. Create Prisma schema
+8. Generate database migrations
+
+**Deliverables**: `phase-5/data-model.md` with:
+- Entity definitions
+- Field specifications
+- Relationships
+- Validation rules
+- State transitions
+- Prisma schema
+
+**Dependencies**: R4 (Recurring task logic)
+
+---
+
+### D2: API Contract Design
+**Goal**: Define REST API contracts for all endpoints
+**Priority**: High
+**Responsible**: Backend team / API architect
+
+**Tasks**:
+1. Design task CRUD endpoints with recurring support
+2. Design reminder endpoints
+3. Design search/filter/sort endpoints
+4. Design audit log query endpoints
+5. Define request/response schemas
+6. Define error responses
+7. Create OpenAPI specification
+
+**Deliverables**: `phase-5/contracts/openapi.yaml` with:
+- All endpoint definitions
+- Request/response schemas
+- Authentication requirements
+- Error codes and messages
+
+**Dependencies**: D1 (Data model)
+
+---
+
+### D3: Event Schema Design
+**Goal**: Define Kafka event schemas for all topics
+**Priority**: High
+**Responsible**: Backend team / Event architect
+
+**Tasks**:
+1. Design task-events schema (create, update, delete, complete)
+2. Design task-updates schema (real-time sync)
+3. Design reminders schema (scheduled notifications)
+4. Design audit-logs schema (immutable trail)
+5. Define correlation ID strategy
+6. Create JSON Schema definitions
+
+**Deliverables**: `phase-5/contracts/events/` with:
+- task-events.schema.json
+- task-updates.schema.json
+- reminders.schema.json
+- audit-logs.schema.json
+
+**Dependencies**: D1 (Data model)
+
+---
+
+### D4: Dapr Component Configuration
+**Goal**: Create Dapr component configurations for all services
+**Priority**: High
+**Responsible**: DevOps team / Dapr specialist
+
+**Tasks**:
+1. Create pub/sub component for Kafka
+2. Create state store component for Redis/PostgreSQL
+3. Create bindings component for cron reminders
+4. Create secrets component for Kubernetes secrets
+5. Configure Dapr observability
+6. Create Dapr configuration files
+
+**Deliverables**: `phase-5/contracts/dapr/` with:
+- pubsub.yaml
+- statestore.yaml
+- bindings.yaml
+- secrets.yaml
+- configuration.yaml
+
+**Dependencies**: R2 (Dapr integration patterns)
+
+---
+
+### D5: Quickstart Guide
+**Goal**: Create developer quickstart guide for Phase 5
+**Priority**: Medium
+**Responsible**: Documentation team
+
+**Tasks**:
+1. Document local development setup
+2. Document Minikube deployment
+3. Document testing procedures
+4. Document debugging tips
+5. Document common issues and solutions
+
+**Deliverables**: `phase-5/quickstart.md` with:
+- Prerequisites
+- Setup instructions
+- Running locally
+- Testing guide
+- Troubleshooting
+
+**Dependencies**: D1, D2, D3, D4
+
+---
+
+### D6: Agent Context Update
+**Goal**: Update agent context files with Phase 5 technologies
+**Priority**: Low
+**Responsible**: Automation
+
+**Tasks**:
+1. Run `.specify/scripts/powershell/update-agent-context.ps1 -AgentType claude`
+2. Add Kafka, Dapr, Kubernetes technologies
+3. Preserve manual additions
+4. Verify context file integrity
+
+**Deliverables**: Updated agent context file
+
+**Dependencies**: D1, D2, D3, D4
+
+## Phase 2: Task Breakdown (Handled by /sp.tasks)
+
+**Note**: Phase 2 task breakdown is handled by the `/sp.tasks` command, which will generate `phase-5/sp.tasks` based on this plan and the specification.
+
+The task breakdown will include:
+
+### Infrastructure Setup Tasks
+1. Set up Kafka cluster (local and cloud)
+2. Set up PostgreSQL/Neon DB
+3. Install and configure Dapr
+4. Set up Kubernetes clusters (Minikube, cloud)
+5. Configure monitoring stack (Prometheus, Grafana, Jaeger, ELK/Loki)
+
+### Backend Development Tasks
+1. Implement task models with recurring support
+2. Implement task service with CRUD operations
+3. Implement recurring task service
+4. Implement reminder service
+5. Implement search/filter/sort service
+6. Implement event publisher service
+7. Implement Kafka producer
+8. Implement API routes and middleware
+9. Implement authentication and authorization
+10. Write unit and integration tests
+
+### Frontend Development Tasks
+1. Implement task list component
+2. Implement task form with recurring support
+3. Implement reminder form
+4. Implement search bar and filter panel
+5. Implement WebSocket integration
+6. Implement real-time sync hooks
+7. Implement API service layer
+8. Write component tests and E2E tests
+
+### Agent Development Tasks
+1. Implement AuditAgent (Kafka consumer, audit logger)
+2. Implement RecurringTaskAgent (Kafka consumer, recurrence calculator)
+3. Implement ReminderAgent (Kafka consumer, notification sender)
+4. Implement RealTimeSyncAgent (Kafka consumer, WebSocket broadcaster)
+5. Write agent tests
+
+### Deployment Tasks
+1. Create Dockerfiles for all services
+2. Create Kubernetes manifests for Minikube
+3. Create Kubernetes manifests for cloud
+4. Create Helm charts (if applicable)
+5. Set up CI/CD pipeline (GitHub Actions)
+6. Configure security scanning
+7. Set up staging and production environments
+
+### Testing and Validation Tasks
+1. Run unit tests for all services
+2. Run integration tests
+3. Run E2E tests
+4. Run load tests (10,000 concurrent users)
+5. Validate audit trail (100% capture)
+6. Validate real-time sync (< 1 second)
+7. Validate recurring task generation
+8. Validate reminder notifications
+
+### Documentation Tasks
+1. Write architecture documentation
+2. Write deployment documentation
+3. Write monitoring documentation
+4. Write runbooks for common operations
+5. Update README files
+
+## Implementation Phases Summary
+
+### Phase 0: Research (1-2 weeks)
+- Complete all 8 research tasks
+- Consolidate findings in research.md
+- Make technology decisions
+- Identify risks and mitigation strategies
+
+### Phase 1: Design (1-2 weeks)
+- Complete data model design
+- Complete API contract design
+- Complete event schema design
+- Complete Dapr component configuration
+- Create quickstart guide
+- Update agent context
+
+### Phase 2: Task Breakdown (via /sp.tasks)
+- Generate detailed task list
+- Assign priorities and dependencies
+- Estimate effort per task
+- Create implementation schedule
+
+### Phase 3: Implementation (via /sp.implement)
+- Execute tasks in dependency order
+- Follow TDD (Test-Driven Development)
+- Implement features incrementally
+- Deploy to Minikube for testing
+- Deploy to staging for validation
+- Deploy to production with approval
+
+## Risk Assessment
+
+### High-Risk Areas
+
+1. **Kafka Cluster Stability**
+   - Risk: Kafka broker failures causing event loss
+   - Mitigation: Replication factor 3, monitoring, alerting, local buffering
+
+2. **Event Ordering and Consistency**
+   - Risk: Out-of-order events causing data inconsistency
+   - Mitigation: Partition by task_id, idempotent consumers, correlation IDs
+
+3. **WebSocket Connection Management**
+   - Risk: Connection limits, memory leaks, reconnection storms
+   - Mitigation: Connection pooling, heartbeat mechanism, exponential backoff
+
+4. **Audit Log Data Loss**
+   - Risk: Events not captured due to agent failures
+   - Mitigation: Dead letter queue, retry mechanism, monitoring, alerting
+
+5. **Deployment Complexity**
+   - Risk: Failed deployments, configuration drift, rollback issues
+   - Mitigation: Infrastructure as code, automated testing, rollback procedures
+
+### Medium-Risk Areas
+
+1. **Dapr Learning Curve**
+   - Risk: Team unfamiliar with Dapr concepts
+   - Mitigation: Training, documentation, proof-of-concept
+
+2. **Recurring Task Edge Cases**
+   - Risk: Incorrect next occurrence calculation
+   - Mitigation: Comprehensive test cases, edge case handling, validation
+
+3. **Performance at Scale**
+   - Risk: System degradation under load
+   - Mitigation: Load testing, horizontal scaling, caching, optimization
+
+4. **Security Vulnerabilities**
+   - Risk: Exposed secrets, injection attacks, unauthorized access
+   - Mitigation: Security scanning, input validation, authentication, encryption
+
+## Success Metrics
+
+### Technical Metrics
+- ✅ All 59 functional requirements implemented
+- ✅ API latency p95 < 500ms
+- ✅ Event processing 1,000/second sustained
+- ✅ Real-time sync < 1 second
+- ✅ 100% audit capture
+- ✅ 99.9% uptime
+- ✅ Zero-downtime deployments
+
+### Quality Metrics
+- ✅ 80%+ code coverage
+- ✅ All tests passing
+- ✅ No critical security vulnerabilities
+- ✅ All documentation complete
+
+### User Metrics
+- ✅ Users can create recurring tasks
+- ✅ Users receive timely reminders
+- ✅ Users can search/filter/sort tasks
+- ✅ Users see real-time updates
+- ✅ Users can view task history
+
+## Next Steps
+
+1. **Complete Phase 0 Research**: Execute all 8 research tasks and consolidate findings in `phase-5/research.md`
+2. **Complete Phase 1 Design**: Execute all 6 design tasks and generate artifacts (data-model.md, contracts/, quickstart.md)
+3. **Run /sp.tasks**: Generate detailed task breakdown in `phase-5/sp.tasks`
+4. **Run /sp.implement**: Execute implementation tasks following TDD
+5. **Deploy to Minikube**: Test locally before cloud deployment
+6. **Deploy to Staging**: Validate in staging environment
+7. **Deploy to Production**: Deploy with approval and monitoring
+
+---
+
+**Plan Status**: ✅ COMPLETE - Ready for Phase 0 research and Phase 1 design
+
+**Next Command**: Begin Phase 0 research or proceed directly to `/sp.tasks` if research is already complete

@@ -1,0 +1,589 @@
+---
+name: Phase5Specify
+phase: Phase5
+description: Specification for Phase 5 advanced features, event-driven architecture, Dapr integration, history tracking, deployment, and CI/CD. Strictly isolated from Phases 1-4.
+created: 2026-02-09
+status: Draft
+---
+
+# Feature Specification: Phase 5 - Advanced Cloud Deployment & Event-Driven Architecture
+
+**Phase**: Phase 5
+**Created**: 2026-02-09
+**Status**: Draft
+**Input**: Advanced features (recurring tasks, reminders, priorities, tags, search/filter/sort), event-driven architecture with Kafka, Dapr integration, Kubernetes deployment, CI/CD, monitoring, and complete audit trail.
+
+## User Scenarios & Testing
+
+### User Story 1 - Create and Manage Recurring Tasks (Priority: P1)
+
+Users need to create tasks that repeat on a schedule (daily, weekly, monthly, custom) without manually recreating them each time. When a recurring task is completed, the system automatically generates the next occurrence based on the recurrence pattern.
+
+**Why this priority**: Core functionality that provides significant user value by automating repetitive task management. This is the foundation for advanced task management.
+
+**Independent Test**: Can be fully tested by creating a recurring task (e.g., "Daily standup at 9 AM"), marking it complete, and verifying the next occurrence is automatically created with the correct due date.
+
+**Acceptance Scenarios**:
+
+1. **Given** a user is creating a new task, **When** they select "Recurring" and choose "Daily" with start date 2026-02-10, **Then** the task is created with recurrence metadata and the first occurrence is scheduled for 2026-02-10
+2. **Given** a recurring task with pattern "Every Monday", **When** the user marks the current occurrence as complete, **Then** the system automatically creates the next occurrence for the following Monday
+3. **Given** a recurring task with pattern "Monthly on the 15th", **When** the current month's task is completed, **Then** the next occurrence is created for the 15th of the next month
+4. **Given** a recurring task, **When** the user edits the recurrence pattern from "Daily" to "Weekly", **Then** all future occurrences follow the new pattern
+
+---
+
+### User Story 2 - Set Due Dates and Receive Reminders (Priority: P1)
+
+Users need to assign due dates to tasks and receive timely notifications (push, email, in-app) before tasks are due. This ensures users never miss important deadlines.
+
+**Why this priority**: Critical for task management effectiveness. Without reminders, users may forget tasks, reducing the application's value.
+
+**Independent Test**: Can be fully tested by creating a task with due date "2026-02-10 3:00 PM" and reminder "1 hour before", then verifying the user receives a notification at 2:00 PM via their preferred channel.
+
+**Acceptance Scenarios**:
+
+1. **Given** a user is creating a task, **When** they set due date to "2026-02-15 5:00 PM" and reminder to "1 day before", **Then** the task is saved with due date and reminder metadata
+2. **Given** a task with due date "2026-02-10 3:00 PM" and reminder "1 hour before", **When** the system time reaches "2026-02-10 2:00 PM", **Then** the user receives a notification via their preferred channel (push/email/in-app)
+3. **Given** a task with multiple reminders (1 week before, 1 day before, 1 hour before), **When** each reminder time is reached, **Then** the user receives a separate notification for each reminder
+4. **Given** a task with due date in the past, **When** the user views their task list, **Then** the overdue task is highlighted with a visual indicator
+
+---
+
+### User Story 3 - Organize Tasks with Priorities and Tags (Priority: P2)
+
+Users need to categorize and prioritize tasks using priority levels (High, Medium, Low) and custom tags (e.g., "work", "personal", "urgent") to organize their task list effectively.
+
+**Why this priority**: Enhances task organization and helps users focus on what matters most. Important for productivity but not blocking core functionality.
+
+**Independent Test**: Can be fully tested by creating tasks with different priorities and tags, then verifying they can be filtered and sorted by these attributes.
+
+**Acceptance Scenarios**:
+
+1. **Given** a user is creating a task, **When** they select priority "High" and add tags "work" and "urgent", **Then** the task is saved with priority and tags metadata
+2. **Given** multiple tasks with different priorities, **When** the user sorts by priority, **Then** tasks are displayed in order: High, Medium, Low
+3. **Given** tasks with various tags, **When** the user filters by tag "work", **Then** only tasks with the "work" tag are displayed
+4. **Given** a task with tags "personal" and "shopping", **When** the user removes the "shopping" tag, **Then** the task retains only the "personal" tag
+
+---
+
+### User Story 4 - Search, Filter, and Sort Tasks (Priority: P2)
+
+Users need to quickly find specific tasks using search (by title, description, tags) and filter/sort capabilities (by status, priority, due date, creation date) to manage large task lists efficiently.
+
+**Why this priority**: Essential for usability as task lists grow. Users with 100+ tasks need efficient ways to find what they're looking for.
+
+**Independent Test**: Can be fully tested by creating 20+ tasks with various attributes, then searching for "meeting", filtering by "High priority", and sorting by "Due date ascending".
+
+**Acceptance Scenarios**:
+
+1. **Given** a task list with 50 tasks, **When** the user searches for "meeting", **Then** only tasks with "meeting" in title or description are displayed
+2. **Given** tasks with various priorities, **When** the user filters by "High priority", **Then** only high-priority tasks are shown
+3. **Given** tasks with different due dates, **When** the user sorts by "Due date ascending", **Then** tasks are ordered from earliest to latest due date
+4. **Given** tasks with multiple tags, **When** the user filters by multiple tags "work" AND "urgent", **Then** only tasks with both tags are displayed
+
+---
+
+### User Story 5 - Real-Time Task Synchronization Across Devices (Priority: P2)
+
+Users working on multiple devices (desktop, mobile, tablet) need to see task updates in real-time without manual refresh. When a task is created, updated, or completed on one device, all other connected devices immediately reflect the change.
+
+**Why this priority**: Critical for multi-device users and team collaboration. Prevents conflicts and ensures data consistency.
+
+**Independent Test**: Can be fully tested by opening the app on two devices, creating a task on device A, and verifying it appears instantly on device B without refresh.
+
+**Acceptance Scenarios**:
+
+1. **Given** a user is logged in on two devices, **When** they create a task on device A, **Then** the task appears on device B within 1 second without manual refresh
+2. **Given** a user has the app open on desktop and mobile, **When** they mark a task complete on mobile, **Then** the task status updates on desktop in real-time
+3. **Given** multiple users viewing the same shared task list, **When** one user updates a task, **Then** all other users see the update immediately
+4. **Given** a user is offline on one device, **When** they come back online, **Then** all changes made while offline are synchronized and conflicts are resolved
+
+---
+
+### User Story 6 - View Complete Task History and Audit Trail (Priority: P3)
+
+Users and administrators need to view the complete history of all task operations (who created, updated, deleted, or completed tasks and when) for accountability, troubleshooting, and analytics.
+
+**Why this priority**: Important for compliance and debugging but not critical for day-to-day task management. Can be added after core features are stable.
+
+**Independent Test**: Can be fully tested by performing various task operations (create, update, complete, delete), then viewing the audit log to verify all operations are recorded with timestamps and user information.
+
+**Acceptance Scenarios**:
+
+1. **Given** a task has been created, updated, and completed, **When** the user views the task history, **Then** all operations are displayed with timestamps, user names, and details of changes
+2. **Given** an administrator needs to investigate a deleted task, **When** they search the audit log by task ID, **Then** they can see who deleted it and when
+3. **Given** a user wants to see their activity, **When** they filter the audit log by their user ID, **Then** all their task operations are displayed chronologically
+4. **Given** a compliance requirement to retain audit logs for 90 days, **When** the system runs daily cleanup, **Then** logs older than 90 days are archived but not deleted
+
+---
+
+### Edge Cases
+
+- **What happens when a recurring task's next occurrence falls on a non-existent date?** (e.g., "Monthly on 31st" but next month has only 30 days) - System should create the task on the last day of the month
+- **How does the system handle reminder notifications when the user is offline?** - Notifications are queued and delivered when the user comes back online, with a note indicating they were delayed
+- **What happens when two devices update the same task simultaneously?** - Last-write-wins with conflict detection; user is notified of conflicts and can choose which version to keep
+- **How does the system handle tasks with due dates in different timezones?** - All due dates are stored in UTC and displayed in the user's local timezone
+- **What happens when a user deletes a recurring task?** - User is prompted to choose: delete only this occurrence, delete this and future occurrences, or delete all occurrences
+- **How does the system handle Kafka broker downtime?** - Events are buffered locally and published when Kafka is available; critical operations (create/update) succeed even if event publishing fails
+- **What happens when the audit database is full?** - System alerts administrators and implements retention policy to archive old logs; audit logging never blocks task operations
+
+## Requirements
+
+### Functional Requirements
+
+#### Core Task Management
+
+- **FR-001**: System MUST support creating recurring tasks with patterns: daily, weekly, monthly, yearly, and custom intervals
+- **FR-002**: System MUST automatically generate the next occurrence of a recurring task when the current occurrence is marked complete
+- **FR-003**: System MUST allow users to set due dates and times for tasks with timezone support
+- **FR-004**: System MUST allow users to configure multiple reminders per task (e.g., 1 week before, 1 day before, 1 hour before)
+- **FR-005**: System MUST send reminder notifications via push, email, and in-app channels based on user preferences
+- **FR-006**: System MUST support priority levels: High, Medium, Low for all tasks
+- **FR-007**: System MUST allow users to add multiple custom tags to tasks
+- **FR-008**: System MUST provide search functionality across task titles, descriptions, and tags
+- **FR-009**: System MUST support filtering tasks by status, priority, tags, due date range, and creation date
+- **FR-010**: System MUST support sorting tasks by priority, due date, creation date, and title
+
+#### Event-Driven Architecture
+
+- **FR-011**: System MUST publish events to Kafka topic `task-events` for all task operations: create, update, delete, complete
+- **FR-012**: System MUST publish events to Kafka topic `task-updates` for real-time synchronization across clients
+- **FR-013**: System MUST publish events to Kafka topic `reminders` for scheduled reminder notifications
+- **FR-014**: System MUST publish events to Kafka topic `audit-logs` for immutable audit trail
+- **FR-015**: All events MUST include: event ID, timestamp, user ID, task ID, operation type, full payload, correlation ID
+- **FR-016**: System MUST ensure events are published atomically with task operations (transactional outbox pattern if needed)
+- **FR-017**: System MUST handle Kafka broker failures gracefully without blocking task operations
+
+#### History and Audit Tracking (NON-NEGOTIABLE)
+
+- **FR-018**: AuditAgent MUST consume all events from `task-events` topic and store them in the audit database
+- **FR-019**: Audit logs MUST be immutable (append-only, no updates or deletes allowed)
+- **FR-020**: Audit logs MUST include: timestamp, user ID, task ID, operation type, before/after state, correlation ID
+- **FR-021**: Audit logs MUST be indexed for efficient querying by user, task, timestamp, and operation type
+- **FR-022**: System MUST support querying audit logs by user activity, task lifecycle, and time range
+- **FR-023**: System MUST retain audit logs for a configurable period (default: 90 days minimum)
+- **FR-024**: System MUST support exporting audit logs for compliance and analytics
+
+#### Agent Responsibilities
+
+- **FR-025**: RecurringTaskAgent MUST subscribe to `task-events` topic and automatically create next occurrences for completed recurring tasks
+- **FR-026**: ReminderAgent MUST subscribe to `reminders` topic and trigger notifications via Notification Service
+- **FR-027**: RealTimeSyncAgent MUST subscribe to `task-updates` topic and broadcast changes to all connected WebSocket clients
+- **FR-028**: AuditAgent MUST subscribe to `task-events` topic and record all operations in the audit database
+- **FR-029**: All agents MUST handle event processing failures with retries and dead letter queues
+- **FR-030**: All agents MUST support graceful shutdown without losing events
+
+#### Dapr Integration
+
+- **FR-031**: System MUST use Dapr Pub/Sub component for Kafka integration
+- **FR-032**: System MUST use Dapr State Management for distributed task state
+- **FR-033**: System MUST use Dapr Bindings for scheduled reminders (cron bindings)
+- **FR-034**: System MUST use Dapr Secrets for managing sensitive configuration (database credentials, API keys)
+- **FR-035**: System MUST use Dapr Service Invocation for inter-service communication with retries and circuit breakers
+- **FR-036**: All services MUST have Dapr sidecars deployed alongside them
+
+#### Real-Time Synchronization
+
+- **FR-037**: System MUST establish WebSocket connections for all connected clients
+- **FR-038**: System MUST broadcast task updates to all connected clients within 1 second
+- **FR-039**: System MUST handle client disconnections and reconnections gracefully
+- **FR-040**: System MUST support conflict resolution for simultaneous updates (last-write-wins with conflict detection)
+
+#### Deployment and Infrastructure
+
+- **FR-041**: System MUST be deployable on Minikube for local development and testing
+- **FR-042**: System MUST be deployable on production Kubernetes clusters (DigitalOcean DOKS, Google GKE, Azure AKS)
+- **FR-043**: All services MUST be containerized with Docker
+- **FR-044**: All services MUST have Kubernetes manifests (Deployments, Services, ConfigMaps, Secrets)
+- **FR-045**: System MUST support horizontal scaling of all services
+- **FR-046**: System MUST implement health checks and readiness probes for all services
+- **FR-047**: System MUST support zero-downtime deployments with rolling updates
+
+#### CI/CD
+
+- **FR-048**: System MUST have GitHub Actions pipeline for automated builds
+- **FR-049**: CI pipeline MUST run tests (unit, integration, E2E) on every commit
+- **FR-050**: CI pipeline MUST perform security scanning of Docker images
+- **FR-051**: CD pipeline MUST deploy to staging environment automatically on main branch commits
+- **FR-052**: CD pipeline MUST support manual approval for production deployments
+- **FR-053**: CD pipeline MUST support rollback to previous versions
+
+#### Monitoring and Observability
+
+- **FR-054**: System MUST expose Prometheus metrics for all services (request rate, latency, error rate)
+- **FR-055**: System MUST provide Grafana dashboards for system health and performance
+- **FR-056**: System MUST implement distributed tracing with Jaeger for request flows
+- **FR-057**: System MUST aggregate logs from all services using ELK stack or Loki
+- **FR-058**: System MUST configure alerts for critical metrics (high error rate, high latency, service down)
+- **FR-059**: System MUST provide runbooks for common operational tasks
+
+### Key Entities
+
+- **Task**: Represents a todo item with attributes: id, title, description, status (pending/completed), priority (high/medium/low), tags (array), due_date (timestamp), created_at, updated_at, user_id, recurrence_pattern (optional), parent_task_id (for recurring tasks)
+
+- **RecurrencePattern**: Defines how a task repeats: frequency (daily/weekly/monthly/yearly/custom), interval (e.g., every 2 weeks), day_of_week (for weekly), day_of_month (for monthly), end_date (optional), occurrences_count (optional)
+
+- **Reminder**: Represents a scheduled notification: id, task_id, reminder_time (timestamp), notification_channels (push/email/in-app), status (pending/sent/failed), created_at
+
+- **AuditLog**: Immutable record of task operations: id, timestamp, user_id, task_id, operation_type (create/update/delete/complete), before_state (JSON), after_state (JSON), correlation_id, metadata
+
+- **Event**: Kafka event payload: event_id, event_type, timestamp, user_id, task_id, payload (JSON), correlation_id, metadata
+
+- **User**: Represents a user: id, email, name, notification_preferences (push/email/in-app), timezone, created_at
+
+## Success Criteria
+
+### Measurable Outcomes
+
+- **SC-001**: Users can create a recurring task and verify the next occurrence is automatically generated within 5 seconds of marking the current one complete
+- **SC-002**: Users receive reminder notifications within 30 seconds of the scheduled reminder time with 99% reliability
+- **SC-003**: Task updates are synchronized across all connected clients within 1 second with 99.9% success rate
+- **SC-004**: System captures 100% of task operations in the audit log with no data loss
+- **SC-005**: System handles 10,000 concurrent users without performance degradation (p95 latency < 500ms)
+- **SC-006**: System processes 1,000 events per second through Kafka with no message loss
+- **SC-007**: All services achieve 99.9% uptime in production
+- **SC-008**: CI/CD pipeline completes build, test, and deployment to staging in under 15 minutes
+- **SC-009**: Users can search and filter through 10,000+ tasks with results returned in under 2 seconds
+- **SC-010**: System successfully deploys to Minikube and at least one cloud provider (DOKS/GKE/AKS)
+- **SC-011**: Zero-downtime deployments are achieved with rolling updates (no user-facing errors during deployment)
+- **SC-012**: Monitoring dashboards provide real-time visibility into system health with alerts triggered within 1 minute of issues
+
+## Event-Driven Architecture Details
+
+### Kafka Topics
+
+1. **task-events**
+   - Purpose: All task lifecycle events (create, update, delete, complete)
+   - Consumers: AuditAgent, RecurringTaskAgent
+   - Partitioning: By task_id for ordered processing
+   - Retention: 7 days
+
+2. **task-updates**
+   - Purpose: Real-time task state changes for client synchronization
+   - Consumers: RealTimeSyncAgent
+   - Partitioning: By user_id for load distribution
+   - Retention: 1 day
+
+3. **reminders**
+   - Purpose: Scheduled reminder events for due tasks
+   - Consumers: ReminderAgent
+   - Partitioning: By user_id for load distribution
+   - Retention: 1 day
+
+4. **audit-logs**
+   - Purpose: Immutable audit trail (optional separate topic for compliance)
+   - Consumers: Analytics services, compliance tools
+   - Partitioning: By user_id
+   - Retention: 90 days
+
+### Event Schemas
+
+All events follow this base schema:
+```json
+{
+  "event_id": "uuid",
+  "event_type": "task.created | task.updated | task.deleted | task.completed",
+  "timestamp": "ISO 8601 timestamp",
+  "user_id": "uuid",
+  "task_id": "uuid",
+  "correlation_id": "uuid for distributed tracing",
+  "payload": {
+    "task": { /* full task object */ },
+    "changes": { /* for updates, before/after state */ }
+  },
+  "metadata": {
+    "source_service": "backend-api",
+    "version": "1.0"
+  }
+}
+```
+
+## Agents and Skills Responsibilities
+
+### Agents
+
+1. **AuditAgent** (`.claude/agents/AuditAgent.md`)
+   - Subscribes to: `task-events` topic
+   - Responsibility: Capture and store all task operations in audit database
+   - Ensures: Immutable logging, indexed storage, queryable history
+   - Integration: Dapr Pub/Sub for event consumption, Dapr State for database access
+
+2. **RecurringTaskAgent** (`.claude/agents/RecurringTaskAgent.md`)
+   - Subscribes to: `task-events` topic (filtered for task.completed events)
+   - Responsibility: Automatically generate next occurrence of recurring tasks
+   - Ensures: Correct recurrence calculation, timezone handling, edge case management
+   - Integration: Dapr Pub/Sub for events, Dapr Service Invocation to create new tasks
+
+3. **ReminderAgent** (`.claude/agents/ReminderAgent.md`)
+   - Subscribes to: `reminders` topic
+   - Responsibility: Trigger notifications via Notification Service
+   - Ensures: Multi-channel delivery (push/email/in-app), retry on failure, delivery confirmation
+   - Integration: Dapr Pub/Sub for events, Dapr Bindings for scheduled reminders, Dapr Service Invocation for Notification Service
+
+4. **RealTimeSyncAgent** (`.claude/agents/RealTimeSyncAgent.md`)
+   - Subscribes to: `task-updates` topic
+   - Responsibility: Broadcast task updates to all connected WebSocket clients
+   - Ensures: Real-time synchronization, connection management, conflict resolution
+   - Integration: Dapr Pub/Sub for events, WebSocket server for client connections
+
+### Skills
+
+1. **RecurringTaskSkill** (`.claude/skills/RecurringTaskSkill.md`)
+   - Capability: Calculate next occurrence based on recurrence pattern
+   - Used by: RecurringTaskAgent
+   - Handles: Daily, weekly, monthly, yearly, custom intervals, edge cases
+
+2. **NotificationSkill** (`.claude/skills/NotificationSkill.md`)
+   - Capability: Send notifications via multiple channels
+   - Used by: ReminderAgent
+   - Handles: Push notifications, email, in-app messages, retry logic
+
+3. **AuditLogSkill** (`.claude/skills/AuditLogSkill.md`)
+   - Capability: Format and store audit log entries
+   - Used by: AuditAgent
+   - Handles: Immutable storage, indexing, querying, retention policy
+
+4. **RealTimeSyncSkill** (`.claude/skills/RealTimeSyncSkill.md`)
+   - Capability: Manage WebSocket connections and broadcast updates
+   - Used by: RealTimeSyncAgent
+   - Handles: Connection lifecycle, message broadcasting, conflict detection
+
+## Dapr Component Usage
+
+### Pub/Sub Component (Kafka)
+
+```yaml
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: kafka-pubsub
+spec:
+  type: pubsub.kafka
+  version: v1
+  metadata:
+    - name: brokers
+      value: "kafka:9092"
+    - name: consumerGroup
+      value: "phase5-group"
+```
+
+### State Store Component (PostgreSQL/Neon DB)
+
+```yaml
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: statestore
+spec:
+  type: state.postgresql
+  version: v1
+  metadata:
+    - name: connectionString
+      secretKeyRef:
+        name: db-secret
+        key: connectionString
+```
+
+### Bindings Component (Cron for Reminders)
+
+```yaml
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: reminder-cron
+spec:
+  type: bindings.cron
+  version: v1
+  metadata:
+    - name: schedule
+      value: "*/1 * * * *" # Every minute
+```
+
+### Secrets Component
+
+```yaml
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: kubernetes-secrets
+spec:
+  type: secretstores.kubernetes
+  version: v1
+```
+
+## Deployment and CI/CD Requirements
+
+### Local Development (Minikube)
+
+1. **Prerequisites**:
+   - Minikube installed and running
+   - kubectl configured for Minikube
+   - Dapr CLI installed (`dapr init -k`)
+   - Helm installed
+
+2. **Deployment Steps**:
+   - Deploy Kafka using Helm: `helm install kafka bitnami/kafka`
+   - Deploy PostgreSQL: `helm install postgres bitnami/postgresql`
+   - Deploy Dapr components (pub/sub, state, bindings, secrets)
+   - Deploy backend services with Dapr sidecars
+   - Deploy frontend service
+   - Deploy agents (Audit, Recurring, Reminder, RealTimeSync)
+   - Verify all pods are running: `kubectl get pods`
+
+3. **Testing**:
+   - Run smoke tests to verify basic functionality
+   - Test event flow from backend to agents
+   - Test real-time synchronization across multiple browser tabs
+   - Test recurring tasks and reminders
+
+### Cloud Deployment (DOKS/GKE/AKS)
+
+1. **Infrastructure Provisioning**:
+   - Use Terraform or cloud-native IaC tools
+   - Provision Kubernetes cluster (minimum 3 nodes, 4 vCPU, 8GB RAM each)
+   - Provision managed Kafka (or deploy using Helm)
+   - Provision managed PostgreSQL database
+   - Configure networking (VPC, subnets, security groups)
+   - Configure DNS and SSL certificates
+
+2. **Kubernetes Resources**:
+   - Deployments for all services with resource limits
+   - Services (ClusterIP for internal, LoadBalancer for external)
+   - ConfigMaps for configuration
+   - Secrets for sensitive data
+   - Horizontal Pod Autoscalers (HPA) for auto-scaling
+   - Ingress for external access
+
+3. **Dapr Configuration**:
+   - Install Dapr on Kubernetes: `dapr init -k`
+   - Deploy Dapr components (pub/sub, state, bindings, secrets)
+   - Configure Dapr sidecars for all services
+
+### CI/CD Pipeline (GitHub Actions)
+
+1. **Continuous Integration**:
+   - Trigger: On every push to feature branches and main
+   - Steps:
+     - Checkout code
+     - Set up Node.js/Python environment
+     - Install dependencies
+     - Run linting and code quality checks
+     - Run unit tests
+     - Run integration tests
+     - Build Docker images
+     - Scan Docker images for vulnerabilities (Trivy/Snyk)
+     - Push images to container registry (Docker Hub/ECR/GCR/ACR)
+
+2. **Continuous Deployment (Staging)**:
+   - Trigger: On successful CI build from main branch
+   - Steps:
+     - Deploy to staging Kubernetes cluster
+     - Run smoke tests
+     - Run E2E tests
+     - Notify team of deployment status
+
+3. **Continuous Deployment (Production)**:
+   - Trigger: Manual approval after staging validation
+   - Steps:
+     - Deploy to production Kubernetes cluster using rolling update strategy
+     - Monitor deployment health
+     - Run smoke tests
+     - Rollback automatically if health checks fail
+     - Notify team of deployment status
+
+### Monitoring and Observability
+
+1. **Metrics (Prometheus + Grafana)**:
+   - Deploy Prometheus for metrics collection
+   - Deploy Grafana for dashboards
+   - Configure service monitors for all services
+   - Create dashboards for:
+     - System health (CPU, memory, disk, network)
+     - Application metrics (request rate, latency, error rate)
+     - Kafka metrics (throughput, lag, partition health)
+     - Database metrics (connections, query performance)
+
+2. **Logging (ELK Stack or Loki)**:
+   - Deploy Elasticsearch/Loki for log storage
+   - Deploy Logstash/Promtail for log collection
+   - Deploy Kibana/Grafana for log visualization
+   - Configure log aggregation from all services
+   - Create log queries for common troubleshooting scenarios
+
+3. **Tracing (Jaeger)**:
+   - Deploy Jaeger for distributed tracing
+   - Configure Dapr to send traces to Jaeger
+   - Instrument services with correlation IDs
+   - Create trace queries for request flows
+
+4. **Alerting**:
+   - Configure Prometheus Alertmanager
+   - Define alerts for:
+     - High error rate (> 5%)
+     - High latency (p95 > 1s)
+     - Service down
+     - Kafka lag (> 1000 messages)
+     - Database connection pool exhausted
+   - Configure notification channels (Slack, PagerDuty, email)
+
+## Assumptions
+
+1. Users have stable internet connectivity for real-time synchronization
+2. Kafka cluster is highly available with replication factor 3
+3. Database supports concurrent writes with proper locking
+4. Users accept eventual consistency for non-critical operations
+5. Notification services (push, email) are provided by third-party services (Firebase, SendGrid)
+6. Kubernetes cluster has sufficient resources for horizontal scaling
+7. Users are authenticated and authorized before accessing the system
+8. All timestamps are stored in UTC and converted to user's local timezone for display
+9. Audit logs are retained for 90 days by default (configurable)
+10. System supports English language initially (internationalization can be added later)
+
+## Out of Scope
+
+- Multi-tenancy and team collaboration features (Phase 6)
+- Task sharing and permissions (Phase 6)
+- File attachments to tasks (Phase 6)
+- Task comments and discussions (Phase 6)
+- Advanced analytics and reporting (Phase 6)
+- Mobile native apps (Phase 6)
+- Offline mode with local storage (Phase 6)
+- Task templates and automation rules (Phase 6)
+
+## Dependencies
+
+- Kafka cluster (managed or self-hosted)
+- PostgreSQL database (Neon DB or managed service)
+- Kubernetes cluster (Minikube for local, DOKS/GKE/AKS for production)
+- Dapr runtime
+- Notification services (Firebase Cloud Messaging, SendGrid)
+- Container registry (Docker Hub, ECR, GCR, ACR)
+- Monitoring stack (Prometheus, Grafana, Jaeger, ELK/Loki)
+- CI/CD platform (GitHub Actions)
+
+## Security Considerations
+
+- All API endpoints require authentication (JWT tokens)
+- All external communication uses HTTPS/TLS
+- Database credentials stored in Kubernetes Secrets
+- Kafka uses SASL/SSL for authentication and encryption
+- Docker images scanned for vulnerabilities before deployment
+- Principle of least privilege for service accounts
+- Audit logs include user identification for accountability
+- Rate limiting on API endpoints to prevent abuse
+- Input validation and sanitization to prevent injection attacks
+
+## Performance Considerations
+
+- Kafka partitioning by task_id/user_id for parallel processing
+- Database indexing on frequently queried fields (user_id, task_id, timestamp)
+- Caching frequently accessed data (user preferences, task lists)
+- Horizontal scaling of all services based on load
+- Connection pooling for database connections
+- WebSocket connection limits per server instance
+- Event batching for high-throughput scenarios
+- Asynchronous processing for non-critical operations
+
+---
+
+**Next Steps**: Proceed to `/sp.plan` to create the implementation plan based on this specification.

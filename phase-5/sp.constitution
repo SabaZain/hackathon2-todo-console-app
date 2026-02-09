@@ -1,0 +1,410 @@
+---
+name: Phase5Constitution
+phase: Phase5
+description: Detailed constitution of Phase 5, including goals, architecture, agents, skills, spec-driven workflow, and history/tracking requirements. Strictly isolated from Phases 1-4.
+version: 1.0.0
+ratified: 2026-02-09
+last_amended: 2026-02-09
+---
+
+# Phase 5 Constitution: Advanced Cloud Deployment & Event-Driven Architecture
+
+## PHASE 5 README
+
+This constitution governs all development activities for Phase 5 of the Hackathon II project. Phase 5 focuses on advanced cloud deployment, event-driven architecture using Kafka, Dapr integration, Kubernetes orchestration, and comprehensive monitoring. All work for Phase 5 MUST be contained within the `phase-5/` folder and MUST NOT modify any files from Phases 1-4.
+
+## I. Goals and Objectives
+
+### Primary Objectives
+
+Phase 5 transforms the Todo application into a production-ready, cloud-native, event-driven system with the following objectives:
+
+1. **Event-Driven Architecture**: Implement Kafka-based event streaming for all task operations, enabling asynchronous processing, decoupled services, and real-time synchronization.
+
+2. **Dapr Integration**: Leverage Dapr (Distributed Application Runtime) for service-to-service communication, pub/sub messaging, state management, and observability across microservices.
+
+3. **Kubernetes Orchestration**: Deploy the application on Kubernetes (Minikube for local, cloud providers for production) with proper resource management, scaling, and high availability.
+
+4. **Cloud Deployment**: Support deployment to major cloud providers (AWS, Azure, GCP) with infrastructure-as-code, automated provisioning, and cloud-native services integration.
+
+5. **CI/CD Pipeline**: Establish automated continuous integration and deployment pipelines with testing, security scanning, and progressive rollout strategies.
+
+6. **Comprehensive Monitoring**: Implement observability stack with metrics (Prometheus), logging (ELK/Loki), tracing (Jaeger), and alerting for production readiness.
+
+7. **History & Audit Trail**: Maintain complete, immutable audit logs of all task operations for compliance, analytics, and troubleshooting.
+
+### Success Criteria
+
+- All task operations publish events to Kafka topics
+- Dapr sidecars handle cross-cutting concerns (pub/sub, state, observability)
+- Application runs successfully on Minikube and at least one cloud provider
+- CI/CD pipeline automates build, test, and deployment
+- Monitoring dashboards provide real-time visibility into system health
+- Audit logs capture 100% of task operations with full traceability
+
+## II. Architecture Overview
+
+### System Architecture
+
+Phase 5 implements a microservices-based, event-driven architecture with the following components:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     Frontend (Next.js)                       │
+│                  WebSocket + REST API Client                 │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   API Gateway / Load Balancer                │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+         ┌───────────────┼───────────────┐
+         ▼               ▼               ▼
+┌─────────────┐  ┌─────────────┐  ┌─────────────┐
+│   Backend   │  │  WebSocket  │  │ Notification│
+│   Service   │  │   Service   │  │   Service   │
+│  (Node.js)  │  │  (Node.js)  │  │  (Node.js)  │
+└──────┬──────┘  └──────┬──────┘  └──────┬──────┘
+       │                │                │
+       │         ┌──────┴────────┬───────┘
+       │         │               │
+       ▼         ▼               ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    Dapr Sidecar Layer                        │
+│         (Pub/Sub, State Management, Service Invocation)      │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    Kafka Event Broker                        │
+│   Topics: task-events, task-updates, reminders, audit-logs  │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+         ┌───────────────┼───────────────┬───────────────┐
+         ▼               ▼               ▼               ▼
+┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐
+│   Audit     │  │  Recurring  │  │  Reminder   │  │ RealTimeSync│
+│   Agent     │  │    Task     │  │   Agent     │  │   Agent     │
+│             │  │   Agent     │  │             │  │             │
+└──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘
+       │                │                │                │
+       ▼                ▼                ▼                ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    Database Layer                            │
+│         (Neon DB / PostgreSQL for persistence)               │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Kafka Topics
+
+Phase 5 defines the following Kafka topics for event-driven communication:
+
+1. **task-events**: All task lifecycle events (create, update, delete, complete)
+2. **task-updates**: Real-time task state changes for client synchronization
+3. **reminders**: Scheduled reminder events for due tasks
+4. **audit-logs**: Immutable audit trail of all operations
+
+### Dapr Components
+
+Dapr provides the following capabilities:
+
+1. **Pub/Sub**: Kafka integration for event publishing and subscription
+2. **State Management**: Distributed state store for task data
+3. **Service Invocation**: Service-to-service communication with retries and circuit breakers
+4. **Bindings**: Scheduled bindings for recurring tasks and reminders
+5. **Observability**: Distributed tracing, metrics, and logging
+
+## III. Agents and Skills
+
+### Phase 5 Agents
+
+Phase 5 introduces specialized agents for event-driven processing. These agents are defined in `.claude/agents/` and can be copied to `phase-5/.claude/agents/` if customization is needed.
+
+#### 1. AuditAgent
+**Location**: `.claude/agents/AuditAgent.md`
+
+**Responsibility**: Captures and maintains a full history of all task operations (create, update, complete, delete). Consumes events from Kafka's `task-events` topic and stores them in the database for audit, analytics, and troubleshooting.
+
+**Requirements**:
+- MUST subscribe to `task-events` Kafka topic
+- MUST record every event with timestamp, user, operation type, and full payload
+- MUST ensure immutable logging (append-only, no updates or deletes)
+- MUST support queries for user activity and task lifecycle
+- MUST integrate with Dapr for event consumption
+
+#### 2. RecurringTaskAgent
+**Location**: `.claude/agents/RecurringTaskAgent.md`
+
+**Responsibility**: Manages all recurring tasks in the Todo system. When a recurring task is marked complete and published as an event, this agent automatically calculates the next occurrence, creates the new task, and schedules it based on the original recurrence pattern.
+
+**Requirements**:
+- MUST subscribe to `task-events` topic for completion events
+- MUST calculate next occurrence based on recurrence rules (daily, weekly, monthly, custom)
+- MUST create new task instances without blocking main workflow
+- MUST handle edge cases (timezone, DST, month-end dates)
+- MUST integrate with Dapr scheduled bindings
+
+#### 3. ReminderAgent
+**Location**: `.claude/agents/ReminderAgent.md`
+
+**Responsibility**: Handles task reminders and notifications. When a task with a due date or reminder is created, updated, or approaching its scheduled time, this agent consumes the relevant event from Kafka and triggers notifications to the user via push, email, or in-app channels.
+
+**Requirements**:
+- MUST subscribe to `reminders` Kafka topic
+- MUST trigger notifications via Notification Service
+- MUST support multiple channels (push, email, in-app)
+- MUST ensure reliable delivery with retries
+- MUST support recurring reminders
+- MUST integrate with Dapr for scheduled bindings
+
+#### 4. RealTimeSyncAgent
+**Location**: `.claude/agents/RealTimeSyncAgent.md`
+
+**Responsibility**: Handles real-time synchronization of tasks across multiple connected clients. Consumes events from Kafka's `task-updates` topic and broadcasts updates via WebSocket to all active clients.
+
+**Requirements**:
+- MUST subscribe to `task-updates` Kafka topic
+- MUST broadcast to all connected WebSocket clients
+- MUST support immediate propagation of changes
+- MUST handle client connection management
+- MUST integrate with Dapr for pub/sub
+
+### Phase 5 Skills
+
+Phase 5 skills provide reusable capabilities for event-driven processing. These skills are defined in `.claude/skills/` and can be copied to `phase-5/.claude/skills/` if customization is needed.
+
+#### 1. RecurringTaskSkill
+**Location**: `.claude/skills/RecurringTaskSkill.md`
+
+**Capability**: Automatically handles recurring tasks. When a task with recurrence is completed, this skill calculates the next occurrence and creates it. Consumes events from Kafka's `task-events` topic and triggers task creation without blocking main task workflow.
+
+#### 2. NotificationSkill
+**Location**: `.claude/skills/NotificationSkill.md`
+
+**Capability**: Sends timely notifications (push/email) to users for due tasks or reminders. Listens to Kafka's `reminders` topic and triggers messages using the Notification Service. Ensures notifications are reliable, retrying if failures occur, and logs events for audit purposes.
+
+#### 3. AuditLogSkill
+**Location**: `.claude/skills/AuditLogSkill.md`
+
+**Capability**: Maintains a complete audit trail of all task operations (create, update, delete, complete). Subscribes to Kafka's `task-events` topic and records every event to the database for accountability and analytics.
+
+#### 4. RealTimeSyncSkill
+**Location**: `.claude/skills/RealTimeSyncSkill.md`
+
+**Capability**: Ensures real-time synchronization of task updates across all connected clients. Subscribes to Kafka's `task-updates` topic and pushes changes via WebSocket or Dapr service invocation.
+
+## IV. History and Tracking Requirements (NON-NEGOTIABLE)
+
+### Audit Trail Mandate
+
+**CRITICAL REQUIREMENT**: Every task operation (create, update, delete, complete) MUST be tracked and recorded via AuditAgent or equivalent, following event-driven architecture using Kafka topics.
+
+### Implementation Requirements
+
+1. **Event Publishing**:
+   - All task operations MUST publish events to the `task-events` Kafka topic
+   - Event payload MUST include: operation type, timestamp, user ID, task ID, full task state (before/after), metadata
+   - Events MUST be published atomically with the operation (transactional outbox pattern if needed)
+
+2. **Event Consumption**:
+   - AuditAgent MUST subscribe to `task-events` topic
+   - Events MUST be processed in order per partition key (task ID)
+   - Failed event processing MUST be retried with exponential backoff
+   - Dead letter queue MUST capture unprocessable events
+
+3. **Audit Log Storage**:
+   - Audit logs MUST be stored in a dedicated database table (e.g., `audit_logs`)
+   - Schema MUST include: id, timestamp, user_id, task_id, operation_type, payload, metadata
+   - Logs MUST be immutable (append-only, no updates or deletes)
+   - Logs MUST be indexed for efficient querying by user, task, timestamp, operation type
+
+4. **Traceability**:
+   - Each event MUST include a correlation ID for distributed tracing
+   - Correlation IDs MUST propagate across all services and agents
+   - Logs MUST be queryable by correlation ID for end-to-end tracing
+
+5. **Analytics Support**:
+   - Audit logs MUST support analytics queries (e.g., user activity, task lifecycle, operation frequency)
+   - Logs MUST be exportable for external analytics tools
+   - Retention policy MUST be configurable (default: 90 days minimum)
+
+6. **Compliance**:
+   - Audit logs MUST comply with data protection regulations (GDPR, CCPA)
+   - Logs MUST support data deletion requests (right to be forgotten)
+   - Logs MUST be tamper-proof (checksums, signatures, or blockchain if required)
+
+### Monitoring and Alerting
+
+- MUST monitor audit log ingestion rate and lag
+- MUST alert on audit log processing failures
+- MUST alert on missing events (gap detection)
+- MUST provide dashboards for audit log health and statistics
+
+## V. Development Workflow
+
+### Spec-Driven Development
+
+Phase 5 follows a strict spec-driven development workflow:
+
+1. **Specification** (`phase-5/sp.specify`):
+   - Define feature requirements, user stories, and acceptance criteria
+   - Specify event schemas, Kafka topics, and Dapr components
+   - Document API contracts, data models, and integration points
+
+2. **Planning** (`phase-5/sp.plan`):
+   - Break down features into implementation tasks
+   - Identify dependencies, risks, and technical decisions
+   - Define architecture, component design, and deployment strategy
+
+3. **Task Definition** (`phase-5/sp.tasks`):
+   - Create actionable, dependency-ordered tasks
+   - Assign tasks to agents or developers
+   - Define acceptance criteria and testing requirements
+
+4. **Implementation** (`phase-5/sp.implement`):
+   - Execute tasks following TDD (Test-Driven Development)
+   - Implement features with proper error handling and logging
+   - Integrate with Kafka, Dapr, and Kubernetes
+
+5. **Testing**:
+   - Unit tests for business logic
+   - Integration tests for Kafka, Dapr, and database
+   - End-to-end tests for user workflows
+   - Load tests for scalability and performance
+
+6. **Deployment**:
+   - Build Docker images with CI/CD pipeline
+   - Deploy to Minikube for local testing
+   - Deploy to cloud provider (staging, production)
+   - Monitor deployment health and rollback if needed
+
+### Code Quality Standards
+
+- All code MUST follow language-specific style guides (ESLint for Node.js, Black for Python)
+- All functions MUST have clear documentation and type annotations
+- All public APIs MUST have OpenAPI/Swagger documentation
+- All Kafka events MUST have JSON Schema definitions
+- All Dapr components MUST have YAML configuration files
+
+### Git Workflow
+
+- All work MUST be done in feature branches (`phase-5/feature-name`)
+- All commits MUST reference specific tasks or requirements
+- All pull requests MUST pass CI/CD checks (tests, linting, security scans)
+- All pull requests MUST be reviewed before merging
+- All merges MUST be to `phase-5/main` branch (isolated from Phases 1-4)
+
+## VI. Deployment Strategy
+
+### Local Development (Minikube)
+
+1. **Prerequisites**:
+   - Minikube installed and running
+   - kubectl configured for Minikube
+   - Dapr CLI installed
+   - Helm installed
+
+2. **Deployment Steps**:
+   - Deploy Kafka using Helm chart
+   - Deploy Dapr components (pub/sub, state store)
+   - Deploy backend services with Dapr sidecars
+   - Deploy frontend service
+   - Deploy agents (Audit, Recurring, Reminder, RealTimeSync)
+   - Verify all pods are running and healthy
+
+3. **Testing**:
+   - Run smoke tests to verify basic functionality
+   - Test event flow from backend to agents
+   - Test real-time synchronization across multiple clients
+   - Test recurring tasks and reminders
+
+### Cloud Deployment
+
+1. **Infrastructure Provisioning**:
+   - Use Terraform or cloud-native IaC tools
+   - Provision Kubernetes cluster (EKS, AKS, GKE)
+   - Provision managed Kafka (MSK, Event Hubs, Confluent Cloud)
+   - Provision managed database (RDS, Azure Database, Cloud SQL)
+
+2. **CI/CD Pipeline**:
+   - Build Docker images on commit
+   - Run tests and security scans
+   - Push images to container registry
+   - Deploy to staging environment
+   - Run integration and E2E tests
+   - Deploy to production with blue-green or canary strategy
+
+3. **Monitoring and Observability**:
+   - Deploy Prometheus for metrics collection
+   - Deploy Grafana for dashboards
+   - Deploy Jaeger for distributed tracing
+   - Deploy ELK or Loki for log aggregation
+   - Configure alerts for critical metrics
+
+## VII. Constraints and Non-Negotiables
+
+### Phase Isolation (CRITICAL)
+
+- **MUST NOT** modify, delete, or update any files or folders from Phases 1-4
+- **MUST** create all Phase 5 files inside `phase-5/` folder
+- **MUST** copy agents/skills from root `.claude/` folder if customization is needed
+- **MUST NOT** change root-level configuration files (except adding Phase 5-specific configs)
+
+### Event-Driven Architecture (CRITICAL)
+
+- **MUST** publish events to Kafka for all task operations
+- **MUST** use Dapr for pub/sub, state management, and service invocation
+- **MUST** ensure eventual consistency across services
+- **MUST** handle event processing failures with retries and dead letter queues
+
+### Audit and Compliance (CRITICAL)
+
+- **MUST** record all task operations in audit logs
+- **MUST** ensure audit logs are immutable and tamper-proof
+- **MUST** support compliance with data protection regulations
+- **MUST** provide traceability with correlation IDs
+
+### Scalability and Reliability
+
+- **MUST** support horizontal scaling of all services
+- **MUST** implement health checks and readiness probes
+- **MUST** handle service failures gracefully with circuit breakers
+- **MUST** ensure zero-downtime deployments
+
+### Security
+
+- **MUST** use HTTPS for all external communication
+- **MUST** authenticate and authorize all API requests
+- **MUST** encrypt sensitive data at rest and in transit
+- **MUST** scan Docker images for vulnerabilities
+- **MUST** follow principle of least privilege for service accounts
+
+## VIII. Governance
+
+### Amendment Process
+
+This constitution can be amended through the following process:
+
+1. Propose amendment with clear rationale and impact analysis
+2. Review amendment with stakeholders
+3. Update constitution with version bump (semantic versioning)
+4. Update dependent artifacts (spec, plan, tasks templates)
+5. Communicate changes to all team members
+
+### Version Control
+
+- **MAJOR**: Backward incompatible changes to architecture or principles
+- **MINOR**: New agents, skills, or significant feature additions
+- **PATCH**: Clarifications, corrections, or minor updates
+
+### Compliance Review
+
+All pull requests MUST verify compliance with this constitution. Any deviation MUST be explicitly justified and approved. This constitution serves as the source of truth for all Phase 5 development decisions.
+
+---
+
+**Version**: 1.0.0
+**Ratified**: 2026-02-09
+**Last Amended**: 2026-02-09
+**Scope**: Phase 5 - Advanced Cloud Deployment & Event-Driven Architecture
