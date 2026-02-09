@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: phase5-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: phase5_user
+      POSTGRES_PASSWORD: phase5_password
+      POSTGRES_DB: phase5_todo
+      POSTGRES_INITDB_ARGS: "-E UTF8"
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - phase5-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U phase5_user -d phase5_todo"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: phase5-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --requirepass phase5_redis_password
+    volumes:
+      - redis-data:/data
+    networks:
+      - phase5-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  redis-data:
+
+networks:
+  phase5-network:
+    driver: bridge

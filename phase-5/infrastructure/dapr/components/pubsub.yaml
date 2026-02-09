@@ -1,0 +1,29 @@
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: kafka-pubsub
+  namespace: default
+spec:
+  type: pubsub.kafka
+  version: v1
+  metadata:
+    - name: brokers
+      value: "localhost:9092"
+    - name: consumerGroup
+      value: "phase5-group"
+    - name: clientId
+      value: "phase5-client"
+    - name: authType
+      value: "none"
+    - name: maxMessageBytes
+      value: "1024000"
+    - name: consumeRetryInterval
+      value: "200ms"
+    - name: version
+      value: "2.8.0"
+scopes:
+  - backend
+  - audit-agent
+  - recurring-task-agent
+  - reminder-agent
+  - realtime-sync-agent

@@ -1,0 +1,162 @@
+// This is your Prisma schema file
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  password  String
+  timezone  String   @default("UTC")
+  notificationPreferences Json @default("{\"push\":true,\"email\":true,\"inApp\":true}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tasks     Task[]
+  auditLogs AuditLog[]
+
+  @@map("users")
+}
+
+// Task model with recurring support
+model Task {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  status      TaskStatus @default(PENDING)
+  priority    TaskPriority @default(MEDIUM)
+  tags        String[]
+  dueDate     DateTime?
+  completedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Recurring task support
+  isRecurring Boolean  @default(false)
+  recurrencePatternId String?
+  recurrencePattern   RecurrencePattern? @relation(fields: [recurrencePatternId], references: [id])
+  parentTaskId String?
+  parentTask   Task?   @relation("RecurringTasks", fields: [parentTaskId], references: [id])
+  childTasks   Task[]  @relation("RecurringTasks")
+
+  reminders   Reminder[]
+  auditLogs   AuditLog[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([priority])
+  @@index([dueDate])
+  @@index([createdAt])
+  @@index([tags])
+  @@map("tasks")
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+// Recurrence pattern for recurring tasks
+model RecurrencePattern {
+  id        String   @id @default(uuid())
+  frequency RecurrenceFrequency
+  interval  Int      @default(1) // e.g., every 2 weeks
+  dayOfWeek Int?     // 0-6 for weekly (0 = Sunday)
+  dayOfMonth Int?    // 1-31 for monthly
+  endDate   DateTime?
+  occurrencesCount Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tasks     Task[]
+
+  @@map("recurrence_patterns")
+}
+
+enum RecurrenceFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+  YEARLY
+  CUSTOM
+}
+
+// Reminder model
+model Reminder {
+  id        String   @id @default(uuid())
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  reminderTime DateTime
+  channels  ReminderChannel[]
+  status    ReminderStatus @default(PENDING)
+  sentAt    DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([taskId])
+  @@index([reminderTime])
+  @@index([status])
+  @@map("reminders")
+}
+
+enum ReminderChannel {
+  PUSH
+  EMAIL
+  IN_APP
+}
+
+enum ReminderStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+// Audit log model (immutable)
+model AuditLog {
+  id        String   @id @default(uuid())
+  timestamp DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskId    String?
+  task      Task?    @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  operationType AuditOperationType
+  beforeState Json?
+  afterState  Json?
+  correlationId String
+  metadata    Json?
+
+  @@index([userId])
+  @@index([taskId])
+  @@index([timestamp])
+  @@index([operationType])
+  @@index([correlationId])
+  @@map("audit_logs")
+}
+
+enum AuditOperationType {
+  CREATE
+  UPDATE
+  DELETE
+  COMPLETE
+  RESTORE
+}

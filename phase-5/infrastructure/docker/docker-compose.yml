@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  # PostgreSQL and Redis
+  postgres:
+    extends:
+      file: ./postgres.yml
+      service: postgres
+
+  redis:
+    extends:
+      file: ./postgres.yml
+      service: redis
+
+  # Kafka and Zookeeper
+  zookeeper:
+    extends:
+      file: ./kafka.yml
+      service: zookeeper
+
+  kafka:
+    extends:
+      file: ./kafka.yml
+      service: kafka
+
+  kafka-ui:
+    extends:
+      file: ./kafka.yml
+      service: kafka-ui
+
+  kafka-init:
+    extends:
+      file: ./kafka.yml
+      service: kafka-init
+
+networks:
+  phase5-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  redis-data:
+  zookeeper-data:
+  zookeeper-logs:
+  kafka-data:
