@@ -60,8 +60,11 @@ class App {
       });
     });
 
-    // API routes will be added here
-    // this.app.use('/api/tasks', taskRoutes);
+    // API routes
+    const taskRoutes = require('./api/routes/tasks.routes').default;
+    this.app.use('/api/tasks', taskRoutes);
+
+    // Additional routes will be added here
     // this.app.use('/api/reminders', reminderRoutes);
     // this.app.use('/api/audit', auditRoutes);
   }
