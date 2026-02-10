@@ -1,0 +1,14 @@
+apiVersion: v2
+name: phase5-frontend
+description: Phase 5 Frontend - Next.js Todo Application
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - todo
+  - nextjs
+  - react
+  - frontend
+maintainers:
+  - name: Phase 5 Team
+    email: team@phase5.dev

@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: phase5
+  labels:
+    name: phase5
+    environment: development

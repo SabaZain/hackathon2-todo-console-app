@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: phase5-config
+  namespace: phase5
+data:
+  # Application
+  NODE_ENV: "development"
+  LOG_LEVEL: "info"
+
+  # Backend
+  PORT: "3001"
+  CORS_ORIGIN: "http://localhost:3000"
+  JWT_EXPIRES_IN: "7d"
+
+  # Database
+  DATABASE_URL: "postgresql://phase5_user:phase5_password@postgres:5432/phase5_todo"
+
+  # Kafka
+  KAFKA_BROKERS: "kafka:9092"
+
+  # Redis
+  REDIS_HOST: "redis"
+  REDIS_PORT: "6379"
+
+  # Dapr
+  DAPR_HTTP_PORT: "3500"
+  DAPR_GRPC_PORT: "50001"
+
+  # Frontend
+  NEXT_PUBLIC_API_URL: "http://localhost:3001"
+  NEXT_PUBLIC_WS_URL: "ws://localhost:3001"
+  NEXT_TELEMETRY_DISABLED: "1"

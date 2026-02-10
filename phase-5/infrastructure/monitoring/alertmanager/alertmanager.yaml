@@ -1,0 +1,437 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-config
+  namespace: monitoring
+data:
+  alertmanager.yml: |
+    global:
+      resolve_timeout: 5m
+      # Slack configuration
+      slack_api_url: '${SLACK_WEBHOOK_URL}'
+
+      # Email configuration
+      smtp_smarthost: '${SMTP_HOST}:${SMTP_PORT}'
+      smtp_from: '${SMTP_FROM}'
+      smtp_auth_username: '${SMTP_USERNAME}'
+      smtp_auth_password: '${SMTP_PASSWORD}'
+      smtp_require_tls: true
+
+    # Templates for notifications
+    templates:
+      - '/etc/alertmanager/templates/*.tmpl'
+
+    # Route tree for alert distribution
+    route:
+      group_by: ['alertname', 'cluster', 'service']
+      group_wait: 10s
+      group_interval: 10s
+      repeat_interval: 12h
+      receiver: 'default'
+
+      routes:
+        # Critical alerts - immediate notification
+        - match:
+            severity: critical
+          receiver: 'critical-alerts'
+          group_wait: 0s
+          repeat_interval: 5m
+          continue: true
+
+        # Warning alerts - less urgent
+        - match:
+            severity: warning
+          receiver: 'warning-alerts'
+          group_wait: 30s
+          repeat_interval: 1h
+
+        # Database alerts
+        - match:
+            component: database
+          receiver: 'database-team'
+          group_by: ['alertname', 'instance']
+
+        # Kafka alerts
+        - match:
+            component: kafka
+          receiver: 'platform-team'
+
+        # Agent-specific alerts
+        - match:
+            component: audit
+          receiver: 'audit-team'
+
+        - match:
+            component: reminder-agent
+          receiver: 'notification-team'
+
+    # Inhibition rules - suppress alerts when others are firing
+    inhibit_rules:
+      # Inhibit warning if critical is firing
+      - source_match:
+          severity: 'critical'
+        target_match:
+          severity: 'warning'
+        equal: ['alertname', 'cluster', 'service']
+
+      # Inhibit pod alerts if deployment is down
+      - source_match:
+          alertname: 'DeploymentReplicaMismatch'
+        target_match:
+          alertname: 'PodDown'
+        equal: ['namespace', 'deployment']
+
+      # Inhibit high CPU if pod is restarting
+      - source_match:
+          alertname: 'PodRestartingTooOften'
+        target_match:
+          alertname: 'HighCPUUsage'
+        equal: ['pod']
+
+    # Receiver configurations
+    receivers:
+      # Default receiver - logs only
+      - name: 'default'
+        webhook_configs:
+          - url: 'http://localhost:9093/webhook'
+            send_resolved: true
+
+      # Critical alerts - multiple channels
+      - name: 'critical-alerts'
+        slack_configs:
+          - channel: '#phase5-critical'
+            title: '🚨 CRITICAL: {{ .GroupLabels.alertname }}'
+            text: |
+              {{ range .Alerts }}
+              *Alert:* {{ .Annotations.summary }}
+              *Description:* {{ .Annotations.description }}
+              *Severity:* {{ .Labels.severity }}
+              *Service:* {{ .Labels.service }}
+              {{ end }}
+            send_resolved: true
+
+        email_configs:
+          - to: 'oncall@phase5.example.com'
+            headers:
+              Subject: '[CRITICAL] Phase 5 Alert: {{ .GroupLabels.alertname }}'
+            html: |
+              <h2>Critical Alert Fired</h2>
+              {{ range .Alerts }}
+              <p><strong>{{ .Annotations.summary }}</strong></p>
+              <p>{{ .Annotations.description }}</p>
+              <p>Severity: {{ .Labels.severity }}</p>
+              {{ end }}
+            send_resolved: true
+
+        # PagerDuty integration (optional)
+        # pagerduty_configs:
+        #   - service_key: '${PAGERDUTY_SERVICE_KEY}'
+        #     description: '{{ .GroupLabels.alertname }}: {{ .Annotations.summary }}'
+
+      # Warning alerts - Slack only
+      - name: 'warning-alerts'
+        slack_configs:
+          - channel: '#phase5-warnings'
+            title: '⚠️ WARNING: {{ .GroupLabels.alertname }}'
+            text: |
+              {{ range .Alerts }}
+              *Alert:* {{ .Annotations.summary }}
+              *Description:* {{ .Annotations.description }}
+              *Service:* {{ .Labels.service }}
+              {{ end }}
+            send_resolved: true
+
+      # Database team
+      - name: 'database-team'
+        slack_configs:
+          - channel: '#phase5-database'
+            title: '🗄️ Database Alert: {{ .GroupLabels.alertname }}'
+            text: |
+              {{ range .Alerts }}
+              *Alert:* {{ .Annotations.summary }}
+              *Description:* {{ .Annotations.description }}
+              *Instance:* {{ .Labels.instance }}
+              {{ end }}
+            send_resolved: true
+
+        email_configs:
+          - to: 'database-team@phase5.example.com'
+            headers:
+              Subject: '[Database] {{ .GroupLabels.alertname }}'
+
+      # Platform team (Kafka, infrastructure)
+      - name: 'platform-team'
+        slack_configs:
+          - channel: '#phase5-platform'
+            title: '🔧 Platform Alert: {{ .GroupLabels.alertname }}'
+            text: |
+              {{ range .Alerts }}
+              *Alert:* {{ .Annotations.summary }}
+              *Description:* {{ .Annotations.description }}
+              {{ end }}
+            send_resolved: true
+
+      # Audit team
+      - name: 'audit-team'
+        slack_configs:
+          - channel: '#phase5-audit'
+            title: '📋 Audit Alert: {{ .GroupLabels.alertname }}'
+            text: |
+              {{ range .Alerts }}
+              *Alert:* {{ .Annotations.summary }}
+              *Description:* {{ .Annotations.description }}
+              {{ end }}
+            send_resolved: true
+
+      # Notification team (reminders)
+      - name: 'notification-team'
+        slack_configs:
+          - channel: '#phase5-notifications'
+            title: '🔔 Notification Alert: {{ .GroupLabels.alertname }}'
+            text: |
+              {{ range .Alerts }}
+              *Alert:* {{ .Annotations.summary }}
+              *Description:* {{ .Annotations.description }}
+              {{ end }}
+            send_resolved: true
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-templates
+  namespace: monitoring
+data:
+  default.tmpl: |
+    {{ define "slack.default.title" }}
+    [{{ .Status | toUpper }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}] {{ .GroupLabels.alertname }}
+    {{ end }}
+
+    {{ define "slack.default.text" }}
+    {{ range .Alerts }}
+    *Alert:* {{ .Annotations.summary }}
+    *Description:* {{ .Annotations.description }}
+    *Details:*
+      {{ range .Labels.SortedPairs }} • *{{ .Name }}:* `{{ .Value }}`
+      {{ end }}
+    {{ end }}
+    {{ end }}
+
+    {{ define "email.default.subject" }}
+    [{{ .Status | toUpper }}] Phase 5: {{ .GroupLabels.alertname }}
+    {{ end }}
+
+    {{ define "email.default.html" }}
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: Arial, sans-serif; }
+        .alert { border: 1px solid #ddd; padding: 15px; margin: 10px 0; }
+        .critical { border-left: 5px solid #d32f2f; }
+        .warning { border-left: 5px solid #f57c00; }
+        .resolved { border-left: 5px solid #388e3c; }
+        h2 { margin-top: 0; }
+        .label { display: inline-block; background: #e0e0e0; padding: 2px 8px; margin: 2px; border-radius: 3px; }
+      </style>
+    </head>
+    <body>
+      <h1>Phase 5 Alert Notification</h1>
+      {{ range .Alerts }}
+      <div class="alert {{ .Labels.severity }}">
+        <h2>{{ .Annotations.summary }}</h2>
+        <p><strong>Description:</strong> {{ .Annotations.description }}</p>
+        <p><strong>Status:</strong> {{ .Status }}</p>
+        <p><strong>Started:</strong> {{ .StartsAt }}</p>
+        {{ if .EndsAt }}
+        <p><strong>Ended:</strong> {{ .EndsAt }}</p>
+        {{ end }}
+        <p><strong>Labels:</strong></p>
+        <div>
+          {{ range .Labels.SortedPairs }}
+          <span class="label">{{ .Name }}: {{ .Value }}</span>
+          {{ end }}
+        </div>
+      </div>
+      {{ end }}
+    </body>
+    </html>
+    {{ end }}
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alertmanager
+  namespace: monitoring
+  labels:
+    app: alertmanager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alertmanager
+  template:
+    metadata:
+      labels:
+        app: alertmanager
+    spec:
+      securityContext:
+        fsGroup: 65534
+        runAsUser: 65534
+        runAsNonRoot: true
+      containers:
+        - name: alertmanager
+          image: prom/alertmanager:v0.26.0
+          args:
+            - '--config.file=/etc/alertmanager/alertmanager.yml'
+            - '--storage.path=/alertmanager'
+            - '--web.external-url=http://alertmanager.phase5.local'
+            - '--cluster.advertise-address=0.0.0.0:9093'
+          ports:
+            - name: web
+              containerPort: 9093
+              protocol: TCP
+            - name: cluster-tcp
+              containerPort: 9094
+              protocol: TCP
+            - name: cluster-udp
+              containerPort: 9094
+              protocol: UDP
+          env:
+            - name: SLACK_WEBHOOK_URL
+              valueFrom:
+                secretKeyRef:
+                  name: alertmanager-secrets
+                  key: slack-webhook-url
+                  optional: true
+            - name: SMTP_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: alertmanager-secrets
+                  key: smtp-host
+                  optional: true
+            - name: SMTP_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: alertmanager-secrets
+                  key: smtp-port
+                  optional: true
+            - name: SMTP_FROM
+              valueFrom:
+                secretKeyRef:
+                  name: alertmanager-secrets
+                  key: smtp-from
+                  optional: true
+            - name: SMTP_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: alertmanager-secrets
+                  key: smtp-username
+                  optional: true
+            - name: SMTP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: alertmanager-secrets
+                  key: smtp-password
+                  optional: true
+          volumeMounts:
+            - name: config
+              mountPath: /etc/alertmanager
+            - name: templates
+              mountPath: /etc/alertmanager/templates
+            - name: storage
+              mountPath: /alertmanager
+          livenessProbe:
+            httpGet:
+              path: /-/healthy
+              port: 9093
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: 9093
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+      volumes:
+        - name: config
+          configMap:
+            name: alertmanager-config
+        - name: templates
+          configMap:
+            name: alertmanager-templates
+        - name: storage
+          emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alertmanager
+  namespace: monitoring
+  labels:
+    app: alertmanager
+spec:
+  type: ClusterIP
+  ports:
+    - name: web
+      port: 9093
+      targetPort: 9093
+      protocol: TCP
+  selector:
+    app: alertmanager
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: alertmanager-secrets
+  namespace: monitoring
+type: Opaque
+stringData:
+  # Slack webhook URL (replace with your actual webhook)
+  slack-webhook-url: "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+
+  # SMTP configuration (replace with your actual SMTP settings)
+  smtp-host: "smtp.gmail.com"
+  smtp-port: "587"
+  smtp-from: "alerts@phase5.example.com"
+  smtp-username: "your-email@gmail.com"
+  smtp-password: "your-app-password"
+
+  # PagerDuty service key (optional)
+  # pagerduty-service-key: "your-pagerduty-key"
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: alertmanager
+  namespace: monitoring
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: alertmanager.phase5.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: alertmanager
+                port:
+                  number: 9093

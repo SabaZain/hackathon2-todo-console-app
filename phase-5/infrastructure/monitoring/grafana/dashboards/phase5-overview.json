@@ -1,0 +1,218 @@
+{
+  "dashboard": {
+    "title": "Phase 5 - System Overview",
+    "tags": ["phase5", "overview"],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "version": 1,
+    "refresh": "30s",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Request Rate (req/s)",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "sum(phase5:http_requests:rate5m) by (service)",
+            "legendFormat": "{{service}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "reqps", "label": "Requests/sec"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Error Rate (%)",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "(sum(phase5:http_errors:rate5m) by (service) / sum(phase5:http_requests:rate5m) by (service)) * 100",
+            "legendFormat": "{{service}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "percent", "label": "Error Rate"},
+          {"format": "short"}
+        ],
+        "alert": {
+          "conditions": [
+            {
+              "evaluator": {"params": [5], "type": "gt"},
+              "operator": {"type": "and"},
+              "query": {"params": ["A", "5m", "now"]},
+              "reducer": {"params": [], "type": "avg"},
+              "type": "query"
+            }
+          ],
+          "executionErrorState": "alerting",
+          "frequency": "60s",
+          "handler": 1,
+          "name": "High Error Rate",
+          "noDataState": "no_data",
+          "notifications": []
+        }
+      },
+      {
+        "id": 3,
+        "title": "Response Time (p50, p95, p99)",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "phase5:http_request_duration:p50",
+            "legendFormat": "p50 - {{service}}",
+            "refId": "A"
+          },
+          {
+            "expr": "phase5:http_request_duration:p95",
+            "legendFormat": "p95 - {{service}}",
+            "refId": "B"
+          },
+          {
+            "expr": "phase5:http_request_duration:p99",
+            "legendFormat": "p99 - {{service}}",
+            "refId": "C"
+          }
+        ],
+        "yaxes": [
+          {"format": "s", "label": "Duration"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Active Pods",
+        "type": "stat",
+        "gridPos": {"x": 12, "y": 8, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "count(up{job=~\"phase5-.*\"} == 1)",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": ["lastNotNull"],
+            "fields": "",
+            "values": false
+          }
+        }
+      },
+      {
+        "id": 5,
+        "title": "WebSocket Connections",
+        "type": "stat",
+        "gridPos": {"x": 18, "y": 8, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "sum(phase5:websocket_connections:current)",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": ["lastNotNull"],
+            "fields": "",
+            "values": false
+          }
+        }
+      },
+      {
+        "id": 6,
+        "title": "CPU Usage by Pod",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 16, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "phase5:cpu_usage:ratio * 100",
+            "legendFormat": "{{pod}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "percent", "label": "CPU Usage", "max": 100},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Memory Usage by Pod",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 16, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "phase5:memory_usage:ratio * 100",
+            "legendFormat": "{{pod}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "percent", "label": "Memory Usage", "max": 100},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Database Connection Pool Usage",
+        "type": "gauge",
+        "gridPos": {"x": 0, "y": 24, "w": 8, "h": 6},
+        "targets": [
+          {
+            "expr": "phase5:database_connections:ratio * 100",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "showThresholdLabels": false,
+          "showThresholdMarkers": true
+        },
+        "fieldConfig": {
+          "defaults": {
+            "max": 100,
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": 0},
+                {"color": "yellow", "value": 70},
+                {"color": "red", "value": 90}
+              ]
+            },
+            "unit": "percent"
+          }
+        }
+      },
+      {
+        "id": 9,
+        "title": "Kafka Consumer Lag",
+        "type": "graph",
+        "gridPos": {"x": 8, "y": 24, "w": 16, "h": 6},
+        "targets": [
+          {
+            "expr": "phase5:kafka_consumer_lag:sum",
+            "legendFormat": "{{consumer_group}} - {{topic}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "short", "label": "Messages"},
+          {"format": "short"}
+        ]
+      }
+    ]
+  }
+}

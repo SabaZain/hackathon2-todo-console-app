@@ -1,0 +1,180 @@
+name: CD - Deploy to Staging
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'phase-5/**'
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18'
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository_owner }}/phase5
+  KUBE_NAMESPACE: phase5-staging
+
+jobs:
+  build-and-push:
+    name: Build and Push Images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      matrix:
+        component:
+          - name: backend
+            context: phase-5/backend
+          - name: frontend
+            context: phase-5/frontend
+          - name: audit-agent
+            context: phase-5/agents/audit-agent
+          - name: reminder-agent
+            context: phase-5/agents/reminder-agent
+          - name: recurring-task-agent
+            context: phase-5/agents/recurring-task-agent
+          - name: realtime-sync-agent
+            context: phase-5/agents/realtime-sync-agent
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.component.name }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix=staging-
+            type=raw,value=staging-latest
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.component.context }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [build-and-push]
+    environment:
+      name: staging
+      url: https://staging.phase5.example.com
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure kubectl
+        uses: azure/k8s-set-context@v3
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ secrets.KUBE_CONFIG_STAGING }}
+
+      - name: Create namespace if not exists
+        run: |
+          kubectl create namespace ${{ env.KUBE_NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Deploy with Helm - Backend
+        run: |
+          helm upgrade --install phase5-backend ./phase-5/infrastructure/helm/backend \
+            --namespace ${{ env.KUBE_NAMESPACE }} \
+            --set image.tag=staging-${{ github.sha }} \
+            --set image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-backend \
+            --set config.nodeEnv=staging \
+            --set database.existingSecret=phase5-staging-secrets \
+            --set redis.existingSecret=phase5-staging-secrets \
+            --wait --timeout 5m
+
+      - name: Deploy with Helm - Frontend
+        run: |
+          helm upgrade --install phase5-frontend ./phase-5/infrastructure/helm/frontend \
+            --namespace ${{ env.KUBE_NAMESPACE }} \
+            --set image.tag=staging-${{ github.sha }} \
+            --set image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-frontend \
+            --set config.nodeEnv=staging \
+            --set config.nextPublicApiUrl=https://api-staging.phase5.example.com \
+            --wait --timeout 5m
+
+      - name: Deploy with Helm - Agents
+        run: |
+          helm upgrade --install phase5-agents ./phase-5/infrastructure/helm/agents \
+            --namespace ${{ env.KUBE_NAMESPACE }} \
+            --set auditAgent.image.tag=staging-${{ github.sha }} \
+            --set reminderAgent.image.tag=staging-${{ github.sha }} \
+            --set recurringTaskAgent.image.tag=staging-${{ github.sha }} \
+            --set realtimeSyncAgent.image.tag=staging-${{ github.sha }} \
+            --set auditAgent.image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-audit-agent \
+            --set reminderAgent.image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-reminder-agent \
+            --set recurringTaskAgent.image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-recurring-task-agent \
+            --set realtimeSyncAgent.image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-realtime-sync-agent \
+            --set config.nodeEnv=staging \
+            --set database.existingSecret=phase5-staging-secrets \
+            --wait --timeout 5m
+
+      - name: Verify deployment
+        run: |
+          kubectl rollout status deployment/phase5-backend -n ${{ env.KUBE_NAMESPACE }}
+          kubectl rollout status deployment/phase5-frontend -n ${{ env.KUBE_NAMESPACE }}
+
+  smoke-tests:
+    name: Run Smoke Tests
+    runs-on: ubuntu-latest
+    needs: [deploy-staging]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Run smoke tests
+        run: |
+          # Health check
+          curl -f https://api-staging.phase5.example.com/health || exit 1
+
+          # Frontend check
+          curl -f https://staging.phase5.example.com || exit 1
+
+          echo "✅ Smoke tests passed!"
+
+  notify:
+    name: Notify Deployment
+    runs-on: ubuntu-latest
+    needs: [smoke-tests]
+    if: always()
+
+    steps:
+      - name: Notify success
+        if: needs.smoke-tests.result == 'success'
+        run: |
+          echo "✅ Staging deployment successful!"
+          echo "URL: https://staging.phase5.example.com"
+          echo "Commit: ${{ github.sha }}"
+
+      - name: Notify failure
+        if: needs.smoke-tests.result != 'success'
+        run: |
+          echo "❌ Staging deployment failed!"
+          exit 1

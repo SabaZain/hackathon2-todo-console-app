@@ -1,0 +1,67 @@
+{{- if .Values.realtimeSyncAgent.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "agents.fullname" . }}-realtime-sync
+  labels:
+    {{- include "agents.labels" . | nindent 4 }}
+    app.kubernetes.io/component: realtime-sync-agent
+spec:
+  replicas: {{ .Values.realtimeSyncAgent.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "agents.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: realtime-sync-agent
+  template:
+    metadata:
+      labels:
+        {{- include "agents.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: realtime-sync-agent
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.shared.podSecurityContext | nindent 8 }}
+      containers:
+      - name: realtime-sync-agent
+        securityContext:
+          {{- toYaml .Values.shared.securityContext | nindent 12 }}
+        image: "{{ .Values.realtimeSyncAgent.image.repository }}:{{ .Values.realtimeSyncAgent.image.tag }}"
+        imagePullPolicy: {{ .Values.realtimeSyncAgent.image.pullPolicy }}
+        env:
+        - name: NODE_ENV
+          value: {{ .Values.config.nodeEnv | quote }}
+        - name: LOG_LEVEL
+          value: {{ .Values.config.logLevel | quote }}
+        - name: KAFKA_BROKERS
+          {{- if .Values.kafka.existingSecret }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.kafka.existingSecret }}
+              key: {{ .Values.kafka.existingSecretKey }}
+          {{- else }}
+          value: {{ .Values.kafka.brokers | quote }}
+          {{- end }}
+        - name: KAFKA_GROUP_ID
+          value: {{ .Values.realtimeSyncAgent.kafka.groupId | quote }}
+        - name: KAFKA_CLIENT_ID
+          value: {{ .Values.realtimeSyncAgent.kafka.clientId | quote }}
+        - name: BACKEND_WS_URL
+          value: {{ .Values.realtimeSyncAgent.backendWsUrl | quote }}
+        resources:
+          {{- toYaml .Values.realtimeSyncAgent.resources | nindent 12 }}
+      {{- with .Values.shared.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.shared.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.shared.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

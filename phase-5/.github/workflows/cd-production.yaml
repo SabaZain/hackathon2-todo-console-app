@@ -1,0 +1,265 @@
+name: CD - Deploy to Production
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to deploy (e.g., v1.0.0)'
+        required: true
+        type: string
+
+env:
+  NODE_VERSION: '18'
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository_owner }}/phase5
+  KUBE_NAMESPACE: phase5-production
+
+jobs:
+  build-and-push:
+    name: Build and Push Production Images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      matrix:
+        component:
+          - name: backend
+            context: phase-5/backend
+          - name: frontend
+            context: phase-5/frontend
+          - name: audit-agent
+            context: phase-5/agents/audit-agent
+          - name: reminder-agent
+            context: phase-5/agents/reminder-agent
+          - name: recurring-task-agent
+            context: phase-5/agents/recurring-task-agent
+          - name: realtime-sync-agent
+            context: phase-5/agents/realtime-sync-agent
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.version }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.component.name }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest
+            type=sha,prefix=prod-
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.component.context }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build-and-push]
+    environment:
+      name: production
+      url: https://app.phase5.example.com
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.version }}
+
+      - name: Configure kubectl
+        uses: azure/k8s-set-context@v3
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ secrets.KUBE_CONFIG_PRODUCTION }}
+
+      - name: Create namespace if not exists
+        run: |
+          kubectl create namespace ${{ env.KUBE_NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Backup current deployment
+        run: |
+          kubectl get all -n ${{ env.KUBE_NAMESPACE }} -o yaml > backup-${{ github.sha }}.yaml
+          echo "Backup created: backup-${{ github.sha }}.yaml"
+
+      - name: Deploy with Helm - Backend
+        run: |
+          helm upgrade --install phase5-backend ./phase-5/infrastructure/helm/backend \
+            --namespace ${{ env.KUBE_NAMESPACE }} \
+            --set image.tag=${{ github.event.release.tag_name || inputs.version }} \
+            --set image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-backend \
+            --set config.nodeEnv=production \
+            --set database.existingSecret=phase5-production-secrets \
+            --set redis.existingSecret=phase5-production-secrets \
+            --set autoscaling.enabled=true \
+            --set autoscaling.minReplicas=3 \
+            --set autoscaling.maxReplicas=20 \
+            --wait --timeout 10m
+
+      - name: Deploy with Helm - Frontend
+        run: |
+          helm upgrade --install phase5-frontend ./phase-5/infrastructure/helm/frontend \
+            --namespace ${{ env.KUBE_NAMESPACE }} \
+            --set image.tag=${{ github.event.release.tag_name || inputs.version }} \
+            --set image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-frontend \
+            --set config.nodeEnv=production \
+            --set config.nextPublicApiUrl=https://api.phase5.example.com \
+            --set config.nextPublicWsUrl=wss://api.phase5.example.com \
+            --set autoscaling.enabled=true \
+            --set autoscaling.minReplicas=3 \
+            --set autoscaling.maxReplicas=20 \
+            --wait --timeout 10m
+
+      - name: Deploy with Helm - Agents
+        run: |
+          helm upgrade --install phase5-agents ./phase-5/infrastructure/helm/agents \
+            --namespace ${{ env.KUBE_NAMESPACE }} \
+            --set auditAgent.image.tag=${{ github.event.release.tag_name || inputs.version }} \
+            --set reminderAgent.image.tag=${{ github.event.release.tag_name || inputs.version }} \
+            --set recurringTaskAgent.image.tag=${{ github.event.release.tag_name || inputs.version }} \
+            --set realtimeSyncAgent.image.tag=${{ github.event.release.tag_name || inputs.version }} \
+            --set auditAgent.image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-audit-agent \
+            --set reminderAgent.image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-reminder-agent \
+            --set recurringTaskAgent.image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-recurring-task-agent \
+            --set realtimeSyncAgent.image.repository=${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-realtime-sync-agent \
+            --set config.nodeEnv=production \
+            --set database.existingSecret=phase5-production-secrets \
+            --wait --timeout 10m
+
+      - name: Verify deployment
+        run: |
+          kubectl rollout status deployment/phase5-backend -n ${{ env.KUBE_NAMESPACE }} --timeout=10m
+          kubectl rollout status deployment/phase5-frontend -n ${{ env.KUBE_NAMESPACE }} --timeout=10m
+
+          # Check pod health
+          kubectl get pods -n ${{ env.KUBE_NAMESPACE }}
+
+          # Verify all pods are running
+          READY_PODS=$(kubectl get pods -n ${{ env.KUBE_NAMESPACE }} -o json | jq '.items[] | select(.status.phase=="Running") | .metadata.name' | wc -l)
+          TOTAL_PODS=$(kubectl get pods -n ${{ env.KUBE_NAMESPACE }} -o json | jq '.items | length')
+
+          echo "Ready pods: $READY_PODS / $TOTAL_PODS"
+
+          if [ "$READY_PODS" -ne "$TOTAL_PODS" ]; then
+            echo "❌ Not all pods are ready!"
+            exit 1
+          fi
+
+  health-checks:
+    name: Production Health Checks
+    runs-on: ubuntu-latest
+    needs: [deploy-production]
+
+    steps:
+      - name: Wait for services to stabilize
+        run: sleep 30
+
+      - name: Check backend health
+        run: |
+          for i in {1..5}; do
+            if curl -f https://api.phase5.example.com/health; then
+              echo "✅ Backend health check passed"
+              break
+            fi
+            if [ $i -eq 5 ]; then
+              echo "❌ Backend health check failed after 5 attempts"
+              exit 1
+            fi
+            echo "Attempt $i failed, retrying in 10s..."
+            sleep 10
+          done
+
+      - name: Check frontend
+        run: |
+          if curl -f https://app.phase5.example.com; then
+            echo "✅ Frontend check passed"
+          else
+            echo "❌ Frontend check failed"
+            exit 1
+          fi
+
+      - name: Run API smoke tests
+        run: |
+          # Test critical endpoints
+          curl -f https://api.phase5.example.com/health || exit 1
+          echo "✅ All health checks passed!"
+
+  notify-success:
+    name: Notify Deployment Success
+    runs-on: ubuntu-latest
+    needs: [health-checks]
+    if: success()
+
+    steps:
+      - name: Create deployment summary
+        run: |
+          echo "# 🎉 Production Deployment Successful!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version**: ${{ github.event.release.tag_name || inputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Deployed by**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Time**: $(date -u)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## URLs" >> $GITHUB_STEP_SUMMARY
+          echo "- Frontend: https://app.phase5.example.com" >> $GITHUB_STEP_SUMMARY
+          echo "- Backend: https://api.phase5.example.com" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Health Status" >> $GITHUB_STEP_SUMMARY
+          echo "✅ All services healthy" >> $GITHUB_STEP_SUMMARY
+
+  rollback:
+    name: Rollback on Failure
+    runs-on: ubuntu-latest
+    needs: [health-checks]
+    if: failure()
+
+    steps:
+      - name: Configure kubectl
+        uses: azure/k8s-set-context@v3
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ secrets.KUBE_CONFIG_PRODUCTION }}
+
+      - name: Rollback deployments
+        run: |
+          echo "❌ Deployment failed, initiating rollback..."
+
+          helm rollback phase5-backend -n ${{ env.KUBE_NAMESPACE }}
+          helm rollback phase5-frontend -n ${{ env.KUBE_NAMESPACE }}
+          helm rollback phase5-agents -n ${{ env.KUBE_NAMESPACE }}
+
+          echo "✅ Rollback completed"
+
+      - name: Notify rollback
+        run: |
+          echo "# ⚠️ Production Deployment Failed - Rolled Back" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version**: ${{ github.event.release.tag_name || inputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Status**: Rolled back to previous version" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Please check the logs and try again." >> $GITHUB_STEP_SUMMARY

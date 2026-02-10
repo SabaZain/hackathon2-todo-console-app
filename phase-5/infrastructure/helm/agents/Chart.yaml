@@ -1,0 +1,14 @@
+apiVersion: v2
+name: phase5-agents
+description: Phase 5 Agents - Event-Driven Microservices
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - agents
+  - microservices
+  - kafka
+  - event-driven
+maintainers:
+  - name: Phase 5 Team
+    email: team@phase5.dev

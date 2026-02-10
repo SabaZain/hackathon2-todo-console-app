@@ -1,0 +1,119 @@
+{{- if .Values.reminderAgent.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "agents.fullname" . }}-reminder
+  labels:
+    {{- include "agents.labels" . | nindent 4 }}
+    app.kubernetes.io/component: reminder-agent
+spec:
+  replicas: {{ .Values.reminderAgent.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "agents.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: reminder-agent
+  template:
+    metadata:
+      labels:
+        {{- include "agents.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: reminder-agent
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.shared.podSecurityContext | nindent 8 }}
+      containers:
+      - name: reminder-agent
+        securityContext:
+          {{- toYaml .Values.shared.securityContext | nindent 12 }}
+        image: "{{ .Values.reminderAgent.image.repository }}:{{ .Values.reminderAgent.image.tag }}"
+        imagePullPolicy: {{ .Values.reminderAgent.image.pullPolicy }}
+        env:
+        - name: NODE_ENV
+          value: {{ .Values.config.nodeEnv | quote }}
+        - name: LOG_LEVEL
+          value: {{ .Values.config.logLevel | quote }}
+        - name: KAFKA_BROKERS
+          {{- if .Values.kafka.existingSecret }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.kafka.existingSecret }}
+              key: {{ .Values.kafka.existingSecretKey }}
+          {{- else }}
+          value: {{ .Values.kafka.brokers | quote }}
+          {{- end }}
+        - name: KAFKA_GROUP_ID
+          value: {{ .Values.reminderAgent.kafka.groupId | quote }}
+        - name: KAFKA_CLIENT_ID
+          value: {{ .Values.reminderAgent.kafka.clientId | quote }}
+        - name: DATABASE_URL
+          {{- if .Values.database.existingSecret }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.database.existingSecret }}
+              key: {{ .Values.database.existingSecretKey }}
+          {{- else }}
+          value: {{ .Values.database.url | quote }}
+          {{- end }}
+        {{- if .Values.reminderAgent.smtp.existingSecret }}
+        - name: SMTP_HOST
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.reminderAgent.smtp.existingSecret }}
+              key: SMTP_HOST
+        - name: SMTP_PORT
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.reminderAgent.smtp.existingSecret }}
+              key: SMTP_PORT
+        - name: SMTP_SECURE
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.reminderAgent.smtp.existingSecret }}
+              key: SMTP_SECURE
+        - name: SMTP_USER
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.reminderAgent.smtp.existingSecret }}
+              key: SMTP_USER
+        - name: SMTP_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.reminderAgent.smtp.existingSecret }}
+              key: SMTP_PASSWORD
+        - name: SMTP_FROM
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.reminderAgent.smtp.existingSecret }}
+              key: SMTP_FROM
+        {{- else }}
+        - name: SMTP_HOST
+          value: {{ .Values.reminderAgent.smtp.host | quote }}
+        - name: SMTP_PORT
+          value: {{ .Values.reminderAgent.smtp.port | quote }}
+        - name: SMTP_SECURE
+          value: {{ .Values.reminderAgent.smtp.secure | quote }}
+        - name: SMTP_USER
+          value: {{ .Values.reminderAgent.smtp.user | quote }}
+        - name: SMTP_PASSWORD
+          value: {{ .Values.reminderAgent.smtp.password | quote }}
+        - name: SMTP_FROM
+          value: {{ .Values.reminderAgent.smtp.from | quote }}
+        {{- end }}
+        resources:
+          {{- toYaml .Values.reminderAgent.resources | nindent 12 }}
+      {{- with .Values.shared.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.shared.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.shared.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

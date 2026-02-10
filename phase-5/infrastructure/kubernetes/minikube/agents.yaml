@@ -1,0 +1,250 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: audit-agent
+  namespace: phase5
+  labels:
+    app: audit-agent
+    tier: agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: audit-agent
+  template:
+    metadata:
+      labels:
+        app: audit-agent
+        tier: agent
+    spec:
+      containers:
+      - name: audit-agent
+        image: phase5-audit-agent:latest
+        imagePullPolicy: Never
+        env:
+        - name: NODE_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: phase5-config
+              key: NODE_ENV
+        - name: KAFKA_BROKERS
+          valueFrom:
+            configMapKeyRef:
+              name: phase5-config
+              key: KAFKA_BROKERS
+        - name: KAFKA_GROUP_ID
+          value: "audit-agent-group"
+        - name: KAFKA_CLIENT_ID
+          value: "audit-agent"
+        - name: DATABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: phase5-config
+              key: DATABASE_URL
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: phase5-config
+              key: LOG_LEVEL
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reminder-agent
+  namespace: phase5
+  labels:
+    app: reminder-agent
+    tier: agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: reminder-agent
+  template:
+    metadata:
+      labels:
+        app: reminder-agent
+        tier: agent
+    spec:
+      containers:
+      - name: reminder-agent
+        image: phase5-reminder-agent:latest
+        imagePullPolicy: Never
+        env:
+        - name: NODE_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: phase5-config
+              key: NODE_ENV
+        - name: KAFKA_BROKERS
+          valueFrom:
+            configMapKeyRef:
+              name: phase5-config
+              key: KAFKA_BROKERS
+        - name: KAFKA_GROUP_ID
+          value: "reminder-agent-group"
+        - name: KAFKA_CLIENT_ID
+          value: "reminder-agent"
+        - name: DATABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: phase5-config
+              key: DATABASE_URL
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: phase5-config
+              key: LOG_LEVEL
+        - name: SMTP_HOST
+          valueFrom:
+            secretKeyRef:
+              name: phase5-secrets
+              key: SMTP_HOST
+        - name: SMTP_PORT
+          valueFrom:
+            secretKeyRef:
+              name: phase5-secrets
+              key: SMTP_PORT
+        - name: SMTP_SECURE
+          valueFrom:
+            secretKeyRef:
+              name: phase5-secrets
+              key: SMTP_SECURE
+        - name: SMTP_USER
+          valueFrom:
+            secretKeyRef:
+              name: phase5-secrets
+              key: SMTP_USER
+        - name: SMTP_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: phase5-secrets
+              key: SMTP_PASSWORD
+        - name: SMTP_FROM
+          valueFrom:
+            secretKeyRef:
+              name: phase5-secrets
+              key: SMTP_FROM
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: recurring-task-agent
+  namespace: phase5
+  labels:
+    app: recurring-task-agent
+    tier: agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: recurring-task-agent
+  template:
+    metadata:
+      labels:
+        app: recurring-task-agent
+        tier: agent
+    spec:
+      containers:
+      - name: recurring-task-agent
+        image: phase5-recurring-task-agent:latest
+        imagePullPolicy: Never
+        env:
+        - name: NODE_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: phase5-config
+              key: NODE_ENV
+        - name: KAFKA_BROKERS
+          valueFrom:
+            configMapKeyRef:
+              name: phase5-config
+              key: KAFKA_BROKERS
+        - name: KAFKA_GROUP_ID
+          value: "recurring-task-agent-group"
+        - name: KAFKA_CLIENT_ID
+          value: "recurring-task-agent"
+        - name: DATABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: phase5-config
+              key: DATABASE_URL
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: phase5-config
+              key: LOG_LEVEL
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: realtime-sync-agent
+  namespace: phase5
+  labels:
+    app: realtime-sync-agent
+    tier: agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: realtime-sync-agent
+  template:
+    metadata:
+      labels:
+        app: realtime-sync-agent
+        tier: agent
+    spec:
+      containers:
+      - name: realtime-sync-agent
+        image: phase5-realtime-sync-agent:latest
+        imagePullPolicy: Never
+        env:
+        - name: NODE_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: phase5-config
+              key: NODE_ENV
+        - name: KAFKA_BROKERS
+          valueFrom:
+            configMapKeyRef:
+              name: phase5-config
+              key: KAFKA_BROKERS
+        - name: KAFKA_GROUP_ID
+          value: "realtime-sync-agent-group"
+        - name: KAFKA_CLIENT_ID
+          value: "realtime-sync-agent"
+        - name: BACKEND_WS_URL
+          value: "http://backend:3001"
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: phase5-config
+              key: LOG_LEVEL
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"

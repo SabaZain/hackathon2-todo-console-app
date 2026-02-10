@@ -1,0 +1,227 @@
+{
+  "dashboard": {
+    "title": "Phase 5 - Database & Infrastructure",
+    "tags": ["phase5", "database", "infrastructure"],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "version": 1,
+    "refresh": "30s",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Database Connections",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "database_connections_active",
+            "legendFormat": "Active - {{instance}}",
+            "refId": "A"
+          },
+          {
+            "expr": "database_connections_idle",
+            "legendFormat": "Idle - {{instance}}",
+            "refId": "B"
+          },
+          {
+            "expr": "database_connections_max",
+            "legendFormat": "Max - {{instance}}",
+            "refId": "C"
+          }
+        ],
+        "yaxes": [
+          {"format": "short", "label": "Connections"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Database Query Duration (p95)",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(database_query_duration_seconds_bucket[5m])) by (le, query_type))",
+            "legendFormat": "{{query_type}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "s", "label": "Duration"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Database Transactions per Second",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "rate(pg_stat_database_xact_commit[5m])",
+            "legendFormat": "Commits - {{datname}}",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(pg_stat_database_xact_rollback[5m])",
+            "legendFormat": "Rollbacks - {{datname}}",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {"format": "ops", "label": "Transactions/sec"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Database Size",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "pg_database_size_bytes",
+            "legendFormat": "{{datname}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "bytes", "label": "Size"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Redis Memory Usage",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 16, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "redis_memory_used_bytes",
+            "legendFormat": "Used - {{instance}}",
+            "refId": "A"
+          },
+          {
+            "expr": "redis_memory_max_bytes",
+            "legendFormat": "Max - {{instance}}",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {"format": "bytes", "label": "Memory"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Redis Operations per Second",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 16, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "rate(redis_commands_processed_total[5m])",
+            "legendFormat": "{{cmd}} - {{instance}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "ops", "label": "Operations/sec"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Kafka Broker Status",
+        "type": "stat",
+        "gridPos": {"x": 0, "y": 24, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "count(kafka_server_broker_state == 3)",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": ["lastNotNull"],
+            "fields": "",
+            "values": false
+          },
+          "text": {},
+          "textMode": "auto"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "green", "value": 1}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 8,
+        "title": "Kafka Messages per Second",
+        "type": "graph",
+        "gridPos": {"x": 6, "y": 24, "w": 18, "h": 8},
+        "targets": [
+          {
+            "expr": "sum(rate(kafka_server_brokertopicmetrics_messagesin_total[5m])) by (topic)",
+            "legendFormat": "{{topic}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "ops", "label": "Messages/sec"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Disk Usage",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 32, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "(node_filesystem_size_bytes{mountpoint=\"/\"} - node_filesystem_avail_bytes{mountpoint=\"/\"}) / node_filesystem_size_bytes{mountpoint=\"/\"} * 100",
+            "legendFormat": "{{instance}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "percent", "label": "Usage", "max": 100},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 10,
+        "title": "Network I/O",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 32, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "rate(node_network_receive_bytes_total[5m])",
+            "legendFormat": "RX - {{device}}",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(node_network_transmit_bytes_total[5m])",
+            "legendFormat": "TX - {{device}}",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {"format": "Bps", "label": "Bytes/sec"},
+          {"format": "short"}
+        ]
+      }
+    ]
+  }
+}

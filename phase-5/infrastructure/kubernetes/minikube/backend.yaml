@@ -1,0 +1,122 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: phase5
+  labels:
+    app: backend
+    tier: api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+        tier: api
+    spec:
+      containers:
+      - name: backend
+        image: phase5-backend:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 3001
+          name: http
+        env:
+        - name: NODE_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: phase5-config
+              key: NODE_ENV
+        - name: PORT
+          valueFrom:
+            configMapKeyRef:
+              name: phase5-config
+              key: PORT
+        - name: DATABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: phase5-config
+              key: DATABASE_URL
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: phase5-secrets
+              key: JWT_SECRET
+        - name: JWT_EXPIRES_IN
+          valueFrom:
+            configMapKeyRef:
+              name: phase5-config
+              key: JWT_EXPIRES_IN
+        - name: KAFKA_BROKERS
+          valueFrom:
+            configMapKeyRef:
+              name: phase5-config
+              key: KAFKA_BROKERS
+        - name: CORS_ORIGIN
+          valueFrom:
+            configMapKeyRef:
+              name: phase5-config
+              key: CORS_ORIGIN
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: phase5-config
+              key: LOG_LEVEL
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: phase5-config
+              key: REDIS_HOST
+        - name: REDIS_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: phase5-config
+              key: REDIS_PORT
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: phase5-secrets
+              key: REDIS_PASSWORD
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3001
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3001
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: phase5
+  labels:
+    app: backend
+spec:
+  type: ClusterIP
+  ports:
+  - port: 3001
+    targetPort: 3001
+    protocol: TCP
+    name: http
+  selector:
+    app: backend

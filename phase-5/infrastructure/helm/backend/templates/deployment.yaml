@@ -1,0 +1,125 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "backend.fullname" . }}
+  labels:
+    {{- include "backend.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "backend.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "backend.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "backend.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+      - name: {{ .Chart.Name }}
+        securityContext:
+          {{- toYaml .Values.securityContext | nindent 12 }}
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.config.port }}
+          protocol: TCP
+        env:
+        - name: NODE_ENV
+          value: {{ .Values.config.nodeEnv | quote }}
+        - name: PORT
+          value: {{ .Values.config.port | quote }}
+        - name: LOG_LEVEL
+          value: {{ .Values.config.logLevel | quote }}
+        - name: CORS_ORIGIN
+          value: {{ .Values.config.corsOrigin | quote }}
+        - name: JWT_EXPIRES_IN
+          value: {{ .Values.config.jwtExpiresIn | quote }}
+        - name: DATABASE_URL
+          {{- if .Values.database.existingSecret }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.database.existingSecret }}
+              key: {{ .Values.database.existingSecretKey }}
+          {{- else }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "backend.fullname" . }}
+              key: DATABASE_URL
+          {{- end }}
+        - name: JWT_SECRET
+          {{- if .Values.jwt.existingSecret }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.jwt.existingSecret }}
+              key: {{ .Values.jwt.existingSecretKey }}
+          {{- else }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "backend.fullname" . }}
+              key: JWT_SECRET
+          {{- end }}
+        - name: KAFKA_BROKERS
+          {{- if .Values.kafka.existingSecret }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.kafka.existingSecret }}
+              key: {{ .Values.kafka.existingSecretKey }}
+          {{- else }}
+          value: {{ .Values.kafka.brokers | quote }}
+          {{- end }}
+        - name: REDIS_HOST
+          value: {{ .Values.redis.host | quote }}
+        - name: REDIS_PORT
+          value: {{ .Values.redis.port | quote }}
+        {{- if .Values.redis.password }}
+        - name: REDIS_PASSWORD
+          {{- if .Values.redis.existingSecret }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.redis.existingSecret }}
+              key: {{ .Values.redis.existingSecretPasswordKey }}
+          {{- else }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "backend.fullname" . }}
+              key: REDIS_PASSWORD
+          {{- end }}
+        {{- end }}
+        {{- if .Values.dapr.enabled }}
+        - name: DAPR_HTTP_PORT
+          value: {{ .Values.dapr.httpPort | quote }}
+        - name: DAPR_GRPC_PORT
+          value: {{ .Values.dapr.grpcPort | quote }}
+        {{- end }}
+        livenessProbe:
+          {{- toYaml .Values.livenessProbe | nindent 12 }}
+        readinessProbe:
+          {{- toYaml .Values.readinessProbe | nindent 12 }}
+        resources:
+          {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

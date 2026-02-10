@@ -1,0 +1,124 @@
+# Default values for phase5-agents
+# This is a YAML-formatted file.
+
+# Global configuration
+global:
+  imagePullSecrets: []
+
+# Shared configuration for all agents
+shared:
+  podSecurityContext:
+    fsGroup: 1001
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1001
+    capabilities:
+      drop:
+      - ALL
+    readOnlyRootFilesystem: false
+    allowPrivilegeEscalation: false
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# Database configuration (shared)
+database:
+  url: "postgresql://phase5_user:password@postgres:5432/phase5_todo"
+  existingSecret: ""
+  existingSecretKey: "DATABASE_URL"
+
+# Kafka configuration (shared)
+kafka:
+  brokers: "kafka:9092"
+  existingSecret: ""
+  existingSecretKey: "KAFKA_BROKERS"
+
+# Common environment
+config:
+  nodeEnv: production
+  logLevel: info
+
+# Audit Agent
+auditAgent:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: phase5-audit-agent
+    pullPolicy: IfNotPresent
+    tag: "latest"
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  kafka:
+    groupId: "audit-agent-group"
+    clientId: "audit-agent"
+
+# Reminder Agent
+reminderAgent:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: phase5-reminder-agent
+    pullPolicy: IfNotPresent
+    tag: "latest"
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  kafka:
+    groupId: "reminder-agent-group"
+    clientId: "reminder-agent"
+  smtp:
+    host: "smtp.gmail.com"
+    port: 587
+    secure: false
+    user: "your-email@gmail.com"
+    password: "your-app-password"
+    from: "Phase 5 Todo <noreply@phase5todo.com>"
+    existingSecret: ""
+
+# Recurring Task Agent
+recurringTaskAgent:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: phase5-recurring-task-agent
+    pullPolicy: IfNotPresent
+    tag: "latest"
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  kafka:
+    groupId: "recurring-task-agent-group"
+    clientId: "recurring-task-agent"
+
+# Real-Time Sync Agent
+realtimeSyncAgent:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: phase5-realtime-sync-agent
+    pullPolicy: IfNotPresent
+    tag: "latest"
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  kafka:
+    groupId: "realtime-sync-agent-group"
+    clientId: "realtime-sync-agent"
+  backendWsUrl: "http://backend:3001"

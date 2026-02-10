@@ -1,0 +1,78 @@
+groups:
+  - name: phase5_recording_rules
+    interval: 30s
+    rules:
+      # Request rate by service
+      - record: phase5:http_requests:rate5m
+        expr: |
+          sum(rate(http_requests_total[5m])) by (service, method, status)
+
+      # Error rate by service
+      - record: phase5:http_errors:rate5m
+        expr: |
+          sum(rate(http_requests_total{status=~"5.."}[5m])) by (service)
+
+      # Request duration quantiles
+      - record: phase5:http_request_duration:p50
+        expr: |
+          histogram_quantile(0.50,
+            sum(rate(http_request_duration_seconds_bucket[5m])) by (le, service)
+          )
+
+      - record: phase5:http_request_duration:p95
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_request_duration_seconds_bucket[5m])) by (le, service)
+          )
+
+      - record: phase5:http_request_duration:p99
+        expr: |
+          histogram_quantile(0.99,
+            sum(rate(http_request_duration_seconds_bucket[5m])) by (le, service)
+          )
+
+      # CPU usage by pod
+      - record: phase5:cpu_usage:ratio
+        expr: |
+          sum(rate(container_cpu_usage_seconds_total{namespace=~"phase5-.*"}[5m])) by (pod)
+          /
+          sum(container_spec_cpu_quota{namespace=~"phase5-.*"} / container_spec_cpu_period{namespace=~"phase5-.*"}) by (pod)
+
+      # Memory usage by pod
+      - record: phase5:memory_usage:ratio
+        expr: |
+          sum(container_memory_working_set_bytes{namespace=~"phase5-.*"}) by (pod)
+          /
+          sum(container_spec_memory_limit_bytes{namespace=~"phase5-.*"}) by (pod)
+
+      # Database connection pool usage
+      - record: phase5:database_connections:ratio
+        expr: |
+          sum(database_connections_active) by (instance)
+          /
+          sum(database_connections_max) by (instance)
+
+      # Kafka consumer lag by topic
+      - record: phase5:kafka_consumer_lag:sum
+        expr: |
+          sum(kafka_consumer_lag) by (consumer_group, topic)
+
+      # Task operations rate
+      - record: phase5:task_operations:rate5m
+        expr: |
+          sum(rate(task_operations_total[5m])) by (operation, status)
+
+      # Reminder delivery rate
+      - record: phase5:reminder_delivery:rate5m
+        expr: |
+          sum(rate(reminder_delivery_total[5m])) by (channel, status)
+
+      # WebSocket connections
+      - record: phase5:websocket_connections:current
+        expr: |
+          sum(websocket_connections_active) by (instance)
+
+      # Audit log write rate
+      - record: phase5:audit_log_writes:rate5m
+        expr: |
+          sum(rate(audit_log_writes_total[5m])) by (operation_type)

@@ -1,0 +1,166 @@
+name: Rollback Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to rollback'
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+      revision:
+        description: 'Revision number to rollback to (leave empty for previous)'
+        required: false
+        type: string
+
+env:
+  KUBE_NAMESPACE: phase5-${{ inputs.environment }}
+
+jobs:
+  confirm-rollback:
+    name: Confirm Rollback
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.environment }}-rollback
+
+    steps:
+      - name: Display rollback information
+        run: |
+          echo "# ⚠️ Rollback Confirmation" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment**: ${{ inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Revision**: ${{ inputs.revision || 'Previous' }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Initiated by**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Time**: $(date -u)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "⚠️ This action will rollback the deployment." >> $GITHUB_STEP_SUMMARY
+
+  rollback:
+    name: Execute Rollback
+    runs-on: ubuntu-latest
+    needs: [confirm-rollback]
+
+    steps:
+      - name: Configure kubectl
+        uses: azure/k8s-set-context@v3
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ inputs.environment == 'production' && secrets.KUBE_CONFIG_PRODUCTION || secrets.KUBE_CONFIG_STAGING }}
+
+      - name: Get current release info
+        id: current
+        run: |
+          echo "backend=$(helm list -n ${{ env.KUBE_NAMESPACE }} -o json | jq -r '.[] | select(.name=="phase5-backend") | .revision')" >> $GITHUB_OUTPUT
+          echo "frontend=$(helm list -n ${{ env.KUBE_NAMESPACE }} -o json | jq -r '.[] | select(.name=="phase5-frontend") | .revision')" >> $GITHUB_OUTPUT
+          echo "agents=$(helm list -n ${{ env.KUBE_NAMESPACE }} -o json | jq -r '.[] | select(.name=="phase5-agents") | .revision')" >> $GITHUB_OUTPUT
+
+      - name: Display current versions
+        run: |
+          echo "Current revisions:"
+          echo "- Backend: ${{ steps.current.outputs.backend }}"
+          echo "- Frontend: ${{ steps.current.outputs.frontend }}"
+          echo "- Agents: ${{ steps.current.outputs.agents }}"
+
+      - name: Rollback Backend
+        run: |
+          if [ -n "${{ inputs.revision }}" ]; then
+            helm rollback phase5-backend ${{ inputs.revision }} -n ${{ env.KUBE_NAMESPACE }}
+          else
+            helm rollback phase5-backend -n ${{ env.KUBE_NAMESPACE }}
+          fi
+          echo "✅ Backend rolled back"
+
+      - name: Rollback Frontend
+        run: |
+          if [ -n "${{ inputs.revision }}" ]; then
+            helm rollback phase5-frontend ${{ inputs.revision }} -n ${{ env.KUBE_NAMESPACE }}
+          else
+            helm rollback phase5-frontend -n ${{ env.KUBE_NAMESPACE }}
+          fi
+          echo "✅ Frontend rolled back"
+
+      - name: Rollback Agents
+        run: |
+          if [ -n "${{ inputs.revision }}" ]; then
+            helm rollback phase5-agents ${{ inputs.revision }} -n ${{ env.KUBE_NAMESPACE }}
+          else
+            helm rollback phase5-agents -n ${{ env.KUBE_NAMESPACE }}
+          fi
+          echo "✅ Agents rolled back"
+
+      - name: Wait for rollback to complete
+        run: |
+          kubectl rollout status deployment/phase5-backend -n ${{ env.KUBE_NAMESPACE }} --timeout=5m
+          kubectl rollout status deployment/phase5-frontend -n ${{ env.KUBE_NAMESPACE }} --timeout=5m
+          echo "✅ Rollback completed successfully"
+
+  verify-rollback:
+    name: Verify Rollback
+    runs-on: ubuntu-latest
+    needs: [rollback]
+
+    steps:
+      - name: Configure kubectl
+        uses: azure/k8s-set-context@v3
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ inputs.environment == 'production' && secrets.KUBE_CONFIG_PRODUCTION || secrets.KUBE_CONFIG_STAGING }}
+
+      - name: Check pod status
+        run: |
+          kubectl get pods -n ${{ env.KUBE_NAMESPACE }}
+
+          # Verify all pods are running
+          READY_PODS=$(kubectl get pods -n ${{ env.KUBE_NAMESPACE }} -o json | jq '.items[] | select(.status.phase=="Running") | .metadata.name' | wc -l)
+          TOTAL_PODS=$(kubectl get pods -n ${{ env.KUBE_NAMESPACE }} -o json | jq '.items | length')
+
+          echo "Ready pods: $READY_PODS / $TOTAL_PODS"
+
+          if [ "$READY_PODS" -ne "$TOTAL_PODS" ]; then
+            echo "❌ Not all pods are ready after rollback!"
+            exit 1
+          fi
+
+      - name: Run health checks
+        run: |
+          BASE_URL="${{ inputs.environment == 'production' && 'https://api.phase5.example.com' || 'https://api-staging.phase5.example.com' }}"
+
+          for i in {1..5}; do
+            if curl -f $BASE_URL/health; then
+              echo "✅ Health check passed"
+              break
+            fi
+            if [ $i -eq 5 ]; then
+              echo "❌ Health check failed after rollback"
+              exit 1
+            fi
+            sleep 10
+          done
+
+  notify:
+    name: Notify Rollback
+    runs-on: ubuntu-latest
+    needs: [verify-rollback]
+    if: always()
+
+    steps:
+      - name: Create rollback summary
+        run: |
+          if [ "${{ needs.verify-rollback.result }}" == "success" ]; then
+            echo "# ✅ Rollback Successful" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Environment**: ${{ inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+            echo "**Status**: Successfully rolled back" >> $GITHUB_STEP_SUMMARY
+            echo "**Executed by**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "All services are healthy after rollback." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "# ❌ Rollback Failed" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Environment**: ${{ inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+            echo "**Status**: Rollback failed" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ Manual intervention required!" >> $GITHUB_STEP_SUMMARY
+          fi

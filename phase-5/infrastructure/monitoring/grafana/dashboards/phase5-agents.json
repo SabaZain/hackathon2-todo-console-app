@@ -1,0 +1,189 @@
+{
+  "dashboard": {
+    "title": "Phase 5 - Agents Monitoring",
+    "tags": ["phase5", "agents", "microservices"],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "version": 1,
+    "refresh": "30s",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Task Operations Rate",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "sum(phase5:task_operations:rate5m) by (operation, status)",
+            "legendFormat": "{{operation}} - {{status}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "ops", "label": "Operations/sec"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Reminder Delivery Rate",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "sum(phase5:reminder_delivery:rate5m) by (channel, status)",
+            "legendFormat": "{{channel}} - {{status}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "ops", "label": "Deliveries/sec"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Reminder Delivery Success Rate",
+        "type": "gauge",
+        "gridPos": {"x": 0, "y": 8, "w": 6, "h": 6},
+        "targets": [
+          {
+            "expr": "(sum(rate(reminder_delivery_total{status=\"success\"}[5m])) / sum(rate(reminder_delivery_total[5m]))) * 100",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "showThresholdLabels": false,
+          "showThresholdMarkers": true
+        },
+        "fieldConfig": {
+          "defaults": {
+            "max": 100,
+            "min": 0,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "red", "value": 0},
+                {"color": "yellow", "value": 90},
+                {"color": "green", "value": 95}
+              ]
+            },
+            "unit": "percent"
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "Audit Log Write Rate",
+        "type": "graph",
+        "gridPos": {"x": 6, "y": 8, "w": 18, "h": 6},
+        "targets": [
+          {
+            "expr": "sum(phase5:audit_log_writes:rate5m) by (operation_type)",
+            "legendFormat": "{{operation_type}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "wps", "label": "Writes/sec"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Recurring Task Agent - Next Occurrence Generation",
+        "type": "stat",
+        "gridPos": {"x": 0, "y": 14, "w": 8, "h": 4},
+        "targets": [
+          {
+            "expr": "sum(rate(recurring_task_generated_total[5m]))",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": ["lastNotNull"],
+            "fields": "",
+            "values": false
+          }
+        }
+      },
+      {
+        "id": 6,
+        "title": "RealTime Sync Agent - WebSocket Messages",
+        "type": "graph",
+        "gridPos": {"x": 8, "y": 14, "w": 16, "h": 8},
+        "targets": [
+          {
+            "expr": "sum(rate(websocket_messages_sent_total[5m])) by (message_type)",
+            "legendFormat": "Sent - {{message_type}}",
+            "refId": "A"
+          },
+          {
+            "expr": "sum(rate(websocket_messages_received_total[5m])) by (message_type)",
+            "legendFormat": "Received - {{message_type}}",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {"format": "ops", "label": "Messages/sec"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Agent Health Status",
+        "type": "table",
+        "gridPos": {"x": 0, "y": 22, "w": 24, "h": 6},
+        "targets": [
+          {
+            "expr": "up{job=\"phase5-agents\"}",
+            "format": "table",
+            "instant": true,
+            "refId": "A"
+          }
+        ],
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true,
+                "__name__": true,
+                "job": true
+              },
+              "indexByName": {},
+              "renameByName": {
+                "agent": "Agent",
+                "namespace": "Namespace",
+                "pod": "Pod",
+                "Value": "Status"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Kafka Event Processing Lag by Agent",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 28, "w": 24, "h": 8},
+        "targets": [
+          {
+            "expr": "kafka_consumer_lag{consumer_group=~\".*-agent\"}",
+            "legendFormat": "{{consumer_group}} - {{topic}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "short", "label": "Lag (messages)"},
+          {"format": "short"}
+        ]
+      }
+    ]
+  }
+}

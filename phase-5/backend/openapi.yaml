@@ -1,0 +1,772 @@
+openapi: 3.0.3
+info:
+  title: Phase 5 Task Management API
+  description: |
+    Event-driven task management system with real-time synchronization, recurring tasks,
+    reminders, and comprehensive audit trail.
+
+    ## Features
+    - RESTful API for task management
+    - Real-time updates via WebSocket
+    - Event-driven architecture with Kafka
+    - Multi-channel reminders (Email, Push, In-App)
+    - Recurring tasks with automatic generation
+    - Advanced search, filter, and sort
+    - Complete audit trail
+
+    ## Authentication
+    All endpoints (except `/health` and `/ready`) require Bearer token authentication.
+    Include the token in the Authorization header: `Authorization: Bearer <token>`
+  version: 1.0.0
+  contact:
+    name: Phase 5 Team
+    email: support@phase5.example.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3001
+    description: Local development
+  - url: https://api-staging.phase5.example.com
+    description: Staging environment
+  - url: https://api.phase5.example.com
+    description: Production environment
+
+tags:
+  - name: Health
+    description: Health check endpoints
+  - name: Authentication
+    description: User authentication and authorization
+  - name: Tasks
+    description: Task management operations
+  - name: Reminders
+    description: Reminder management
+  - name: Audit
+    description: Audit trail and history
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      description: Returns the health status of the API
+      operationId: getHealth
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  timestamp:
+                    type: string
+                    format: date-time
+                  service:
+                    type: string
+                    example: phase5-backend
+                  version:
+                    type: string
+                    example: 1.0.0
+
+  /ready:
+    get:
+      tags:
+        - Health
+      summary: Readiness check
+      description: Returns whether the service is ready to accept traffic
+      operationId: getReady
+      responses:
+        '200':
+          description: Service is ready
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ready
+                  timestamp:
+                    type: string
+                    format: date-time
+                  checks:
+                    type: object
+                    properties:
+                      database:
+                        type: string
+                        example: ok
+                      kafka:
+                        type: string
+                        example: ok
+                      redis:
+                        type: string
+                        example: ok
+        '503':
+          description: Service is not ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /metrics:
+    get:
+      tags:
+        - Health
+      summary: Prometheus metrics
+      description: Returns Prometheus metrics for monitoring
+      operationId: getMetrics
+      responses:
+        '200':
+          description: Metrics in Prometheus format
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  /api/auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register new user
+      description: Create a new user account
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - name
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  example: SecurePass123!
+                name:
+                  type: string
+                  example: John Doe
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                  user:
+                    $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: User already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login user
+      description: Authenticate user and receive JWT token
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  format: password
+                  example: SecurePass123!
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/tasks:
+    get:
+      tags:
+        - Tasks
+      summary: Get all tasks
+      description: Retrieve all tasks for the authenticated user with optional filtering
+      operationId: getTasks
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: priority
+          in: query
+          description: Filter by priority
+          schema:
+            type: string
+            enum: [low, medium, high, urgent]
+        - name: tags
+          in: query
+          description: Filter by tags (comma-separated)
+          schema:
+            type: string
+            example: work,urgent
+        - name: completed
+          in: query
+          description: Filter by completion status
+          schema:
+            type: boolean
+        - name: search
+          in: query
+          description: Search in title and description
+          schema:
+            type: string
+        - name: sortBy
+          in: query
+          description: Sort field
+          schema:
+            type: string
+            enum: [createdAt, dueDate, priority, title]
+            default: createdAt
+        - name: sortOrder
+          in: query
+          description: Sort order
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+      responses:
+        '200':
+          description: Tasks retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      tags:
+        - Tasks
+      summary: Create new task
+      description: Create a new task for the authenticated user
+      operationId: createTask
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskInput'
+      responses:
+        '201':
+          description: Task created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/tasks/{id}:
+    get:
+      tags:
+        - Tasks
+      summary: Get task by ID
+      description: Retrieve a specific task by its ID
+      operationId: getTaskById
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Task ID
+          schema:
+            type: string
+            example: task-123-abc
+      responses:
+        '200':
+          description: Task retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden - task belongs to another user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      tags:
+        - Tasks
+      summary: Update task
+      description: Update an existing task
+      operationId: updateTask
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Task ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskInput'
+      responses:
+        '200':
+          description: Task updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags:
+        - Tasks
+      summary: Delete task
+      description: Delete a task permanently
+      operationId: deleteTask
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Task ID
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Task deleted successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/tasks/{id}/complete:
+    post:
+      tags:
+        - Tasks
+      summary: Complete task
+      description: Mark a task as completed
+      operationId: completeTask
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Task ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Task completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Task not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/reminders:
+    post:
+      tags:
+        - Reminders
+      summary: Create reminder
+      description: Create a reminder for a task
+      operationId: createReminder
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReminderInput'
+      responses:
+        '201':
+          description: Reminder created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reminder'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/audit:
+    get:
+      tags:
+        - Audit
+      summary: Get audit logs
+      description: Retrieve audit trail for user's tasks
+      operationId: getAuditLogs
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: taskId
+          in: query
+          description: Filter by task ID
+          schema:
+            type: string
+        - name: operation
+          in: query
+          description: Filter by operation type
+          schema:
+            type: string
+            enum: [task.created, task.updated, task.completed, task.deleted]
+        - name: limit
+          in: query
+          description: Number of records to return
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+        - name: offset
+          in: query
+          description: Number of records to skip
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Audit logs retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  logs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AuditLog'
+                  total:
+                    type: integer
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          example: user-123-abc
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        name:
+          type: string
+          example: John Doe
+        createdAt:
+          type: string
+          format: date-time
+
+    Task:
+      type: object
+      properties:
+        id:
+          type: string
+          example: task-123-abc
+        title:
+          type: string
+          example: Complete project documentation
+        description:
+          type: string
+          example: Write comprehensive API documentation
+        userId:
+          type: string
+          example: user-123-abc
+        priority:
+          type: string
+          enum: [low, medium, high, urgent]
+          example: high
+        tags:
+          type: array
+          items:
+            type: string
+          example: [work, documentation]
+        completed:
+          type: boolean
+          example: false
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+        dueDate:
+          type: string
+          format: date-time
+          nullable: true
+        isRecurring:
+          type: boolean
+          example: false
+        recurrencePattern:
+          type: string
+          enum: [daily, weekly, monthly, yearly]
+          nullable: true
+        parentTaskId:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    TaskInput:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+          example: Complete project documentation
+        description:
+          type: string
+          maxLength: 2000
+          example: Write comprehensive API documentation
+        priority:
+          type: string
+          enum: [low, medium, high, urgent]
+          default: medium
+        tags:
+          type: array
+          items:
+            type: string
+          example: [work, documentation]
+        dueDate:
+          type: string
+          format: date-time
+        isRecurring:
+          type: boolean
+          default: false
+        recurrencePattern:
+          type: string
+          enum: [daily, weekly, monthly, yearly]
+
+    Reminder:
+      type: object
+      properties:
+        id:
+          type: string
+        taskId:
+          type: string
+        userId:
+          type: string
+        reminderTime:
+          type: string
+          format: date-time
+        channels:
+          type: array
+          items:
+            type: string
+            enum: [email, push, in-app]
+        sent:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    ReminderInput:
+      type: object
+      required:
+        - taskId
+        - reminderTime
+        - channels
+      properties:
+        taskId:
+          type: string
+        reminderTime:
+          type: string
+          format: date-time
+        channels:
+          type: array
+          items:
+            type: string
+            enum: [email, push, in-app]
+          minItems: 1
+
+    AuditLog:
+      type: object
+      properties:
+        id:
+          type: string
+        taskId:
+          type: string
+        userId:
+          type: string
+        operation:
+          type: string
+          enum: [task.created, task.updated, task.completed, task.deleted]
+        changes:
+          type: object
+        timestamp:
+          type: string
+          format: date-time
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Invalid input
+        message:
+          type: string
+          example: Title is required
+        statusCode:
+          type: integer
+          example: 400

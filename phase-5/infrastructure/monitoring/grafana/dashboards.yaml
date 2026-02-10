@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  phase5-overview.json: |
+{{ .Files.Get "dashboards/phase5-overview.json" | indent 4 }}
+  phase5-agents.json: |
+{{ .Files.Get "dashboards/phase5-agents.json" | indent 4 }}
+  phase5-database.json: |
+{{ .Files.Get "dashboards/phase5-database.json" | indent 4 }}

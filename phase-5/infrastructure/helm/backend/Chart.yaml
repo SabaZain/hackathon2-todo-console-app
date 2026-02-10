@@ -1,0 +1,14 @@
+apiVersion: v2
+name: phase5-backend
+description: Phase 5 Backend API - Event-Driven Todo Application
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - todo
+  - event-driven
+  - kafka
+  - microservices
+maintainers:
+  - name: Phase 5 Team
+    email: team@phase5.dev
