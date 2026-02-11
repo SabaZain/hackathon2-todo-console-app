@@ -189,7 +189,7 @@ export default function TaskList({
               onChange={(e) =>
                 setFilters({ ...filters, status: e.target.value as TaskStatus || undefined })
               }
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900"
             >
               <option value="">All</option>
               <option value="PENDING">Pending</option>
@@ -208,7 +208,7 @@ export default function TaskList({
               onChange={(e) =>
                 setFilters({ ...filters, priority: e.target.value as TaskPriority || undefined })
               }
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900"
             >
               <option value="">All</option>
               <option value="HIGH">High</option>
@@ -224,7 +224,7 @@ export default function TaskList({
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900"
             >
               <option value="dueDate">Due Date</option>
               <option value="priority">Priority</option>
@@ -244,7 +244,7 @@ export default function TaskList({
                 setFilters({ ...filters, search: e.target.value || undefined })
               }
               placeholder="Search tasks..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900"
             />
           </div>
         </div>

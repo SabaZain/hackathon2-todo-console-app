@@ -21,8 +21,80 @@ const getAuditLogsQuerySchema = Joi.object({
 });
 
 /**
- * GET /api/audit
- * Get audit logs for the authenticated user
+ * @swagger
+ * /api/audit:
+ *   get:
+ *     summary: Get audit logs for the authenticated user
+ *     tags: [Audit]
+ *     parameters:
+ *       - in: query
+ *         name: taskId
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Filter by task ID
+ *       - in: query
+ *         name: operationType
+ *         schema:
+ *           type: string
+ *           enum: [CREATE, UPDATE, DELETE, COMPLETE]
+ *         description: Filter by operation type
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: Filter logs after this date
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: Filter logs before this date
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 50
+ *         description: Number of records to return
+ *       - in: query
+ *         name: offset
+ *         schema:
+ *           type: integer
+ *           minimum: 0
+ *           default: 0
+ *         description: Number of records to skip
+ *     responses:
+ *       200:
+ *         description: List of audit logs
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/AuditLog'
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     total:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ *                     offset:
+ *                       type: integer
+ *                     hasMore:
+ *                       type: boolean
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
  */
 router.get(
   '/',
@@ -105,8 +177,41 @@ router.get(
 );
 
 /**
- * GET /api/audit/task/:taskId
- * Get audit logs for a specific task
+ * @swagger
+ * /api/audit/task/{taskId}:
+ *   get:
+ *     summary: Get audit logs for a specific task
+ *     tags: [Audit]
+ *     parameters:
+ *       - in: path
+ *         name: taskId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Task ID
+ *     responses:
+ *       200:
+ *         description: List of audit logs for the task
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/AuditLog'
+ *                 count:
+ *                   type: integer
+ *       404:
+ *         description: Task not found
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
  */
 router.get(
   '/task/:taskId',
@@ -159,8 +264,62 @@ router.get(
 );
 
 /**
- * GET /api/audit/stats
- * Get audit statistics for the authenticated user
+ * @swagger
+ * /api/audit/stats:
+ *   get:
+ *     summary: Get audit statistics for the authenticated user
+ *     tags: [Audit]
+ *     responses:
+ *       200:
+ *         description: Audit statistics
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     totalOperations:
+ *                       type: integer
+ *                       description: Total number of operations
+ *                     recentActivity:
+ *                       type: integer
+ *                       description: Number of operations in the last 7 days
+ *                     operationCounts:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           operationType:
+ *                             type: string
+ *                             enum: [CREATE, UPDATE, DELETE, COMPLETE]
+ *                           count:
+ *                             type: integer
+ *                     mostActiveTasks:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           taskId:
+ *                             type: string
+ *                           count:
+ *                             type: integer
+ *                           task:
+ *                             type: object
+ *                             properties:
+ *                               id:
+ *                                 type: string
+ *                               title:
+ *                                 type: string
+ *                               status:
+ *                                 type: string
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
  */
 router.get(
   '/stats',

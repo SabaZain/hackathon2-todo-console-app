@@ -1,7 +1,7 @@
 import { Server as HTTPServer } from 'http';
 import { Server as SocketIOServer, Socket } from 'socket.io';
 import { Kafka, Consumer, EachMessagePayload } from 'kafkajs';
-import logger from '../config/logger';
+import logger from '../logger';
 
 interface AuthenticatedSocket extends Socket {
   userId?: string;

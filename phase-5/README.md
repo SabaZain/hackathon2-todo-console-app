@@ -1,449 +1,285 @@
-# Phase 5 - Event-Driven Todo Application
+# TaskFlow - Simple Task Management
 
-**Status**: ✅ MVP Complete + Deployment Infrastructure Ready
-**Progress**: 109/150 tasks (73%)
-**Date**: 2026-02-10
+A professional task management application with authentication, recurring tasks, reminders, and real-time sync.
 
----
+## Features
 
-## 🎉 What's Complete
+- **User Authentication** - Secure email/password registration and login with JWT tokens
+- **Task Management** - Create, update, complete, and delete tasks
+- **Recurring Tasks** - Automatic next occurrence generation
+- **Smart Reminders** - Multi-channel notifications
+- **Real-Time Sync** - Live updates across all devices
+- **Search & Filter** - Advanced task discovery
+- **Audit Trail** - Complete operation history
 
-### ✅ All 6 User Stories (100%)
-1. **Recurring Tasks** - Automatic next occurrence generation
-2. **Reminders** - Multi-channel notifications (Email, Push, In-App)
-3. **Priorities & Tags** - Task organization and categorization
-4. **Search/Filter/Sort** - Advanced task discovery
-5. **Real-Time Sync** - Live updates across all devices
-6. **Audit Trail** - Complete operation history
+## Tech Stack
 
-### ✅ Full Event-Driven Architecture
-- **Backend API**: 17 endpoints with Express.js + Prisma
-- **4 Microservice Agents**: Audit, Reminder, RecurringTask, RealTimeSync
-- **Kafka Integration**: 4 topics with event publishing
-- **WebSocket Server**: Real-time bidirectional communication
-- **PostgreSQL Database**: Complete schema with indexes
-- **Redis**: State management for Dapr
-
-### ✅ Complete Deployment Infrastructure
-- **Docker Compose**: One-command local deployment
-- **Kubernetes Manifests**: Full Minikube deployment
-- **Deployment Scripts**: Automated setup for Windows/Linux/Mac
-- **Documentation**: Comprehensive deployment guide
+- **Frontend**: Next.js 15, React 18, TypeScript, Tailwind CSS
+- **Backend**: Node.js, Express, TypeScript, Prisma ORM
+- **Database**: PostgreSQL (Neon - cloud hosted)
+- **Authentication**: JWT with bcrypt password hashing
+- **Real-time**: WebSocket for live updates
+- **Event Streaming**: Kafka (optional)
 
 ---
 
 ## 🚀 Quick Start
 
-### Option 1: Docker Compose (Recommended)
+### Prerequisites
 
-**Windows:**
-```bash
-cd infrastructure/scripts
-.\deploy-local.bat
-```
+- Node.js 18+ and npm
+- Docker Desktop (for Docker deployment option)
+- Neon PostgreSQL database (already configured)
 
-**Linux/Mac:**
-```bash
-cd infrastructure/scripts
-./deploy-local.sh
-```
+### Option 1: Docker Deployment (Recommended)
 
-**Access:**
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:3001
-- Kafka UI: http://localhost:8080
-
-### Option 2: Minikube (Kubernetes)
+Start all services with Docker:
 
 ```bash
-cd infrastructure/scripts
-./deploy-minikube.sh
+cd phase-5
+docker-compose up
 ```
 
-**Access:**
-- Frontend: http://$(minikube ip):30000
-- Backend: http://$(minikube ip):30001
+Access the application:
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:3001
+- **API Docs**: http://localhost:3001/docs
+
+To stop:
+```bash
+docker-compose down
+```
+
+### Option 2: Manual Development Setup
+
+**1. Install Dependencies**
+
+```bash
+# Backend
+cd phase-5/backend
+npm install
+
+# Frontend (in a new terminal)
+cd phase-5/frontend
+npm install
+```
+
+**2. Configure Environment**
+
+The `.env` files are already configured to use the Neon database. No changes needed.
+
+**3. Run Database Migrations**
+
+```bash
+cd phase-5/backend
+npx prisma migrate deploy
+```
+
+**4. Start Services**
+
+```bash
+# Terminal 1 - Backend
+cd phase-5/backend
+npm run dev
+
+# Terminal 2 - Frontend
+cd phase-5/frontend
+npm run dev
+```
+
+Access the application:
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:3001
+- **API Docs**: http://localhost:3001/docs
 
 ---
 
-## 📊 Architecture
+## 📝 Usage
 
-### System Overview
+### First Time Setup
 
+1. Open http://localhost:3000
+2. Click "Get Started" to register a new account
+3. Enter your email, name, and password
+4. Login with your credentials
+5. Start creating tasks!
+
+### API Documentation
+
+Full API documentation with interactive testing is available at:
+http://localhost:3001/docs
+
+### Authentication
+
+All API endpoints (except `/api/auth/register` and `/api/auth/login`) require authentication:
+
+```bash
+# Register
+curl -X POST http://localhost:3001/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@example.com","password":"password123","name":"John Doe"}'
+
+# Login
+curl -X POST http://localhost:3001/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@example.com","password":"password123"}'
+
+# Use the returned token in subsequent requests
+curl http://localhost:3001/api/tasks \
+  -H "Authorization: Bearer YOUR_TOKEN_HERE"
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                         Frontend                             │
-│                  (Next.js 14 + React 18)                     │
-│              WebSocket Client + REST API Client              │
-└────────────────────┬────────────────────────────────────────┘
-                     │
-                     ▼
-┌─────────────────────────────────────────────────────────────┐
-│                      Backend API                             │
-│              (Express.js + Prisma + Socket.IO)               │
-│                                                              │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
-│  │ TaskService  │  │ReminderService│  │WebSocketSvc  │      │
-│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘      │
-│         │                  │                  │              │
-│         └──────────────────┴──────────────────┘              │
-│                            │                                 │
-└────────────────────────────┼─────────────────────────────────┘
-                             │
-                ┌────────────┴────────────┐
-                ▼                         ▼
-        ┌──────────────┐          ┌──────────────┐
-        │  PostgreSQL  │          │    Kafka     │
-        │   Database   │          │   Cluster    │
-        └──────────────┘          └──────┬───────┘
-                                         │
-                    ┌────────────────────┼────────────────────┐
-                    ▼                    ▼                    ▼
-            ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
-            │ AuditAgent   │    │ReminderAgent │    │RealTimeSyncA.│
-            │              │    │              │    │              │
-            │ Stores all   │    │ Sends email  │    │ Broadcasts   │
-            │ operations   │    │ notifications│    │ via WebSocket│
-            └──────────────┘    └──────────────┘    └──────────────┘
-```
-
-### Event Flow
-
-```
-User Action → Backend API → Database + Kafka Event
-                                      │
-                    ┌─────────────────┼─────────────────┐
-                    ▼                 ▼                 ▼
-              AuditAgent      ReminderAgent    RealTimeSyncAgent
-                    │                 │                 │
-                    ▼                 ▼                 ▼
-            Audit Logs        Email Sent        WebSocket Broadcast
-                                                        │
-                                                        ▼
-                                                All Connected Clients
-```
-
----
-
-## 📁 Project Structure
-
-```
-phase-5/
-├── backend/                    # Express.js API
-│   ├── src/
-│   │   ├── api/
-│   │   │   ├── routes/        # API routes (tasks, reminders, audit)
-│   │   │   └── middleware/    # Auth, validation, error handling
-│   │   ├── services/          # Business logic (5 services)
-│   │   ├── events/            # Kafka producer & schemas
-│   │   └── config/            # Configuration & logger
-│   ├── prisma/                # Database schema
-│   ├── Dockerfile
-│   └── package.json
-│
-├── frontend/                   # Next.js 14 application
-│   ├── src/
-│   │   ├── app/               # Pages (home, tasks, audit)
-│   │   ├── components/        # React components (9 major)
-│   │   ├── services/          # API service layer
-│   │   └── types/             # TypeScript definitions
-│   ├── Dockerfile
-│   └── package.json
-│
-├── agents/                     # Microservice agents
-│   ├── audit-agent/           # Consumes task-events
-│   ├── reminder-agent/        # Sends notifications
-│   ├── recurring-task-agent/  # Generates next occurrences
-│   └── realtime-sync-agent/   # Broadcasts WebSocket updates
-│
-├── infrastructure/
-│   ├── docker/                # Docker Compose configuration
-│   │   ├── docker-compose.yml
-│   │   ├── kafka.yml
-│   │   └── postgres.yml
-│   ├── kubernetes/            # Kubernetes manifests
-│   │   └── minikube/          # Minikube deployment (12 files)
-│   ├── dapr/                  # Dapr components
-│   │   └── components/        # Pub/Sub, State, Bindings, Secrets
-│   └── scripts/               # Deployment automation (7 scripts)
-│
-├── docs/
-│   ├── architecture.md        # System architecture
-│   ├── DEPLOYMENT.md          # Deployment guide
-│   └── QUICKSTART.md          # Quick start guide
-│
-└── README.md                  # This file
-```
-
----
-
-## 🛠️ Technology Stack
-
-### Backend
-- **Runtime**: Node.js 18+
-- **Framework**: Express.js 4.18
-- **Database**: PostgreSQL 16 + Prisma ORM 5.8
-- **Message Queue**: Apache Kafka 7.5
-- **Real-Time**: Socket.IO 4.6
-- **State Store**: Redis 7
-- **Validation**: Joi 17
-- **Authentication**: JWT (jsonwebtoken 9)
-- **Logging**: Winston 3
-
-### Frontend
-- **Framework**: Next.js 14 (App Router)
-- **UI Library**: React 18
-- **Styling**: TailwindCSS 3
-- **HTTP Client**: Axios
-- **WebSocket**: Socket.IO Client
-- **Language**: TypeScript 5
-
-### Infrastructure
-- **Containerization**: Docker + Docker Compose
-- **Orchestration**: Kubernetes (Minikube for local)
-- **Service Mesh**: Dapr 3.2 (configured)
-- **Monitoring**: Prometheus + Grafana (planned)
-- **Tracing**: Jaeger (planned)
-- **CI/CD**: GitHub Actions (planned)
-
----
-
-## 📈 API Endpoints
-
-### Tasks (8 endpoints)
-- `POST /api/tasks` - Create task
-- `POST /api/tasks/recurring` - Create recurring task
-- `GET /api/tasks` - List tasks (with filters)
-- `GET /api/tasks/:id` - Get task details
-- `GET /api/tasks/:id/occurrences` - Get recurring task occurrences
-- `PUT /api/tasks/:id` - Update task
-- `POST /api/tasks/:id/complete` - Complete task
-- `DELETE /api/tasks/:id` - Delete task
-
-### Reminders (6 endpoints)
-- `POST /api/reminders` - Create reminder
-- `GET /api/reminders` - List reminders
-- `GET /api/reminders/:id` - Get reminder details
-- `GET /api/tasks/:taskId/reminders` - Get task reminders
-- `PUT /api/reminders/:id` - Update reminder
-- `DELETE /api/reminders/:id` - Delete reminder
-
-### Audit (3 endpoints)
-- `GET /api/audit` - List audit logs
-- `GET /api/audit/stats` - Get audit statistics
-- `GET /api/audit/task/:taskId` - Get task audit history
-
----
-
-## 🎯 Features
-
-### User Story 1: Recurring Tasks
-- ✅ Create tasks with recurrence patterns (daily, weekly, monthly, yearly)
-- ✅ Automatic next occurrence generation on completion
-- ✅ View all occurrences of a recurring task
-- ✅ Visual indicators (🔄 badge)
-- ✅ Edge case handling (month-end, leap years)
-
-### User Story 2: Reminders
-- ✅ Set reminders for any task
-- ✅ Multi-channel notifications (Email, Push, In-App)
-- ✅ HTML email templates
-- ✅ Cron-based reminder checking (every minute)
-- ✅ Reminder status tracking (PENDING, SENT, FAILED)
-
-### User Story 3: Priorities & Tags
-- ✅ Assign priority levels (High, Medium, Low)
-- ✅ Add unlimited tags to tasks
-- ✅ Filter by priority and tags
-- ✅ Sort by priority
-- ✅ Color-coded visual indicators
-
-### User Story 4: Search/Filter/Sort
-- ✅ Full-text search in title and description
-- ✅ Filter by status, priority, tags
-- ✅ Sort by due date, priority, created date, title
-- ✅ Combine multiple filters
-- ✅ Real-time results
-
-### User Story 5: Real-Time Sync
-- ✅ Live updates across all devices
-- ✅ WebSocket-based synchronization
-- ✅ Connection status indicator
-- ✅ Automatic reconnection
-- ✅ No page refresh needed
-
-### User Story 6: Audit Trail
-- ✅ Complete operation history
-- ✅ Filter by operation type and date
-- ✅ Before/after state tracking
-- ✅ Statistics dashboard
-- ✅ Most active tasks identification
 
 ---
 
 ## 🔧 Configuration
 
-### Backend Environment Variables
+### Environment Variables
 
-Create `backend/.env`:
+**Backend** (`phase-5/backend/.env`):
 ```env
+DATABASE_URL=postgresql://neondb_owner:npg_k05UWxOueCjr@ep-curly-mud-aifl6lej-pooler.c-4.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+JWT_SECRET=f6a4cdf97324adfc392ba802253b5881208660fdcaa7be4e5e0dc79c5145f192
 NODE_ENV=development
 PORT=3001
-DATABASE_URL=postgresql://phase5_user:phase5_password@localhost:5432/phase5_todo
-JWT_SECRET=your-secret-key-change-in-production
-JWT_EXPIRES_IN=7d
-KAFKA_BROKERS=localhost:9092
-CORS_ORIGIN=http://localhost:3000
-LOG_LEVEL=info
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_PASSWORD=your-redis-password
 ```
 
-### Frontend Environment Variables
-
-Create `frontend/.env.local`:
+**Frontend** (`phase-5/frontend/.env.local`):
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:3001
 NEXT_PUBLIC_WS_URL=ws://localhost:3001
-NEXT_TELEMETRY_DISABLED=1
 ```
 
-### SMTP Configuration (for ReminderAgent)
+### Database
 
-Update in `agents/reminder-agent/.env`:
-```env
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_SECURE=false
-SMTP_USER=your-email@gmail.com
-SMTP_PASSWORD=your-app-password
-SMTP_FROM=Phase 5 Todo <noreply@phase5todo.com>
+The application uses Neon PostgreSQL (cloud-hosted). The database is already configured and migrations are applied automatically.
+
+To view the database schema:
+```bash
+cd phase-5/backend
+npx prisma studio
 ```
 
 ---
 
-## 📚 Documentation
+## 🏗️ Project Structure
 
-- **[DEPLOYMENT.md](docs/DEPLOYMENT.md)** - Complete deployment guide
-- **[QUICKSTART.md](docs/QUICKSTART.md)** - Quick start guide
-- **[architecture.md](docs/architecture.md)** - System architecture
-- **[IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)** - Implementation details
-- **[MVP_COMPLETE_FINAL_REPORT.md](MVP_COMPLETE_FINAL_REPORT.md)** - MVP completion report
-- **[FINAL_SUMMARY.md](FINAL_SUMMARY.md)** - Complete project summary
+```
+phase-5/
+├── backend/
+│   ├── src/
+│   │   ├── api/
+│   │   │   ├── routes/          # API endpoints
+│   │   │   └── middleware/      # Auth, validation, error handling
+│   │   ├── services/            # Business logic
+│   │   ├── events/              # Kafka event producers
+│   │   ├── prisma/              # Database schema
+│   │   └── index.ts             # Server entry point
+│   ├── Dockerfile
+│   └── package.json
+├── frontend/
+│   ├── src/
+│   │   ├── app/                 # Next.js pages
+│   │   ├── components/          # React components
+│   │   └── lib/                 # Utilities
+│   ├── Dockerfile
+│   └── package.json
+└── docker-compose.yml
+```
 
 ---
 
 ## 🧪 Testing
 
-### Manual Testing
-
-1. Start services with Docker Compose
-2. Access frontend at http://localhost:3000
-3. Test each user story:
-   - Create recurring task → Complete → Verify next occurrence
-   - Set reminder → Wait for notification
-   - Add priorities and tags → Filter and sort
-   - Search for tasks
-   - Open multiple browser tabs → Verify real-time sync
-   - Check audit trail for all operations
-
-### API Testing
-
+### Backend Tests
 ```bash
-# Health check
-curl http://localhost:3001/health
+cd phase-5/backend
+npm test
+```
 
-# Create task
-curl -X POST http://localhost:3001/api/tasks \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -d '{
-    "title": "Test Task",
-    "description": "Testing the API",
-    "priority": "HIGH",
-    "tags": ["test"]
-  }'
+### Frontend Tests
+```bash
+cd phase-5/frontend
+npm test
 ```
 
 ---
 
-## 📊 Progress Summary
+## 🐛 Troubleshooting
 
-| Category | Completed | Total | % |
-|----------|-----------|-------|---|
-| Setup | 8 | 8 | 100% |
-| Foundational | 22 | 22 | 100% |
-| User Stories | 62 | 62 | 100% |
-| Deployment | 17 | 25 | 68% |
-| CI/CD & Monitoring | 0 | 21 | 0% |
-| Polish & Testing | 0 | 22 | 0% |
-| **TOTAL** | **109** | **150** | **73%** |
+### Backend won't start
+- Check if port 3001 is already in use: `netstat -ano | findstr :3001`
+- Verify database connection in `.env` file
+- Check logs for specific error messages
 
----
+### Frontend won't start
+- Check if port 3000 is already in use: `netstat -ano | findstr :3000`
+- Verify `NEXT_PUBLIC_API_URL` in `.env.local`
+- Clear Next.js cache: `rm -rf .next`
 
-## 🚧 Remaining Work
+### Docker issues
+- Ensure Docker Desktop is running
+- Check container logs: `docker-compose logs backend` or `docker-compose logs frontend`
+- Rebuild containers: `docker-compose up --build`
 
-### Deployment (8 tasks remaining)
-- Helm charts for cloud deployment
-- Terraform infrastructure as code
-- HorizontalPodAutoscaler configuration
-- Cloud-specific deployment scripts
+### Database connection errors
+- The Neon database is cloud-hosted and should always be accessible
+- Check your internet connection
+- Verify the DATABASE_URL in `.env` files
 
-### CI/CD & Monitoring (21 tasks)
-- GitHub Actions workflows
-- Automated testing in CI
-- Prometheus metrics collection
-- Grafana dashboards
-- Jaeger distributed tracing
-- ELK/Loki log aggregation
-- Alert rules and notifications
-
-### Polish & Testing (22 tasks)
-- Unit tests for all services
-- Integration tests for API
-- E2E tests for frontend
-- Performance optimization
-- Security hardening
-- API documentation (OpenAPI)
-- User guides and tutorials
+### Kafka warnings (optional)
+- Kafka is optional and warnings can be ignored for basic usage
+- The application works without Kafka (no event streaming)
+- To disable Kafka warnings, set `KAFKAJS_NO_PARTITIONER_WARNING=1`
 
 ---
 
-## 🎯 Next Steps
+## 📚 API Endpoints
 
-Choose your path:
+### Authentication
+- `POST /api/auth/register` - Register new user
+- `POST /api/auth/login` - Login user
+- `GET /api/auth/profile` - Get user profile (requires auth)
+- `PUT /api/auth/profile` - Update user profile (requires auth)
 
-1. **Deploy and Test** - Use the deployment infrastructure to run the application
-2. **Add CI/CD** - Set up automated testing and deployment pipelines
-3. **Add Monitoring** - Deploy Prometheus, Grafana, and Jaeger
-4. **Add Testing** - Write comprehensive test suites
-5. **Cloud Deployment** - Complete Helm charts and Terraform for production
+### Tasks
+- `GET /api/tasks` - List all tasks (requires auth)
+- `POST /api/tasks` - Create task (requires auth)
+- `GET /api/tasks/:id` - Get task details (requires auth)
+- `PUT /api/tasks/:id` - Update task (requires auth)
+- `DELETE /api/tasks/:id` - Delete task (requires auth)
+- `POST /api/tasks/:id/complete` - Mark task complete (requires auth)
+
+### Reminders
+- `GET /api/reminders` - List reminders (requires auth)
+- `POST /api/reminders` - Create reminder (requires auth)
+- `PUT /api/reminders/:id` - Update reminder (requires auth)
+- `DELETE /api/reminders/:id` - Delete reminder (requires auth)
+
+### Audit
+- `GET /api/audit` - Get audit logs (requires auth)
 
 ---
 
-## 🤝 Contributing
+## 🔒 Security
 
-This is a hackathon project demonstrating event-driven architecture with modern technologies.
+- Passwords are hashed using bcrypt with 10 salt rounds
+- JWT tokens expire after 7 days
+- All API endpoints (except auth) require valid JWT token
+- CORS is configured to allow requests from frontend only
+- Helmet.js provides security headers
+- Input validation on all endpoints
 
 ---
 
 ## 📄 License
 
-MIT
+MIT License - feel free to use this project for learning or production.
 
 ---
 
-## 🎉 Achievements
+## 🤝 Support
 
-- ✅ Complete MVP with 6 user stories
-- ✅ Event-driven microservices architecture
-- ✅ Real-time collaboration features
-- ✅ Full audit trail
-- ✅ Multi-channel notifications
-- ✅ Production-ready deployment infrastructure
-- ✅ Comprehensive documentation
-- ✅ ~9,000 lines of production code
-- ✅ 105+ files across the stack
-
-**Status**: Ready for deployment and testing! 🚀
+For issues or questions:
+1. Check the troubleshooting section above
+2. Review API documentation at http://localhost:3001/docs
+3. Check application logs for error messages

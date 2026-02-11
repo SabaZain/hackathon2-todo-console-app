@@ -43,8 +43,51 @@ const getRemindersQuerySchema = Joi.object({
 });
 
 /**
- * POST /api/reminders
- * Create a new reminder for a task
+ * @swagger
+ * /api/reminders:
+ *   post:
+ *     summary: Create a new reminder for a task
+ *     tags: [Reminders]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - taskId
+ *               - reminderTime
+ *               - channels
+ *             properties:
+ *               taskId:
+ *                 type: string
+ *                 format: uuid
+ *               reminderTime:
+ *                 type: string
+ *                 format: date-time
+ *               channels:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   enum: [EMAIL, PUSH, SMS, IN_APP]
+ *     responses:
+ *       201:
+ *         description: Reminder created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/Reminder'
+ *                 message:
+ *                   type: string
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
  */
 router.post(
   '/',
@@ -73,8 +116,38 @@ router.post(
 );
 
 /**
- * GET /api/reminders
- * Get all reminders for the authenticated user
+ * @swagger
+ * /api/reminders:
+ *   get:
+ *     summary: Get all reminders for the authenticated user
+ *     tags: [Reminders]
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [PENDING, SENT, FAILED, CANCELLED]
+ *         description: Filter by reminder status
+ *     responses:
+ *       200:
+ *         description: List of reminders
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Reminder'
+ *                 count:
+ *                   type: integer
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
  */
 router.get(
   '/',
@@ -101,8 +174,37 @@ router.get(
 );
 
 /**
- * GET /api/reminders/:id
- * Get a specific reminder by ID
+ * @swagger
+ * /api/reminders/{id}:
+ *   get:
+ *     summary: Get a specific reminder by ID
+ *     tags: [Reminders]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Reminder ID
+ *     responses:
+ *       200:
+ *         description: Reminder details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/Reminder'
+ *       404:
+ *         description: Reminder not found
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
  */
 router.get(
   '/:id',
@@ -135,8 +237,39 @@ router.get(
 );
 
 /**
- * GET /api/tasks/:taskId/reminders
- * Get all reminders for a specific task
+ * @swagger
+ * /api/reminders/tasks/{taskId}/reminders:
+ *   get:
+ *     summary: Get all reminders for a specific task
+ *     tags: [Reminders]
+ *     parameters:
+ *       - in: path
+ *         name: taskId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Task ID
+ *     responses:
+ *       200:
+ *         description: List of reminders for the task
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Reminder'
+ *                 count:
+ *                   type: integer
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
  */
 router.get(
   '/tasks/:taskId/reminders',
@@ -165,8 +298,57 @@ router.get(
 );
 
 /**
- * PUT /api/reminders/:id
- * Update a reminder
+ * @swagger
+ * /api/reminders/{id}:
+ *   put:
+ *     summary: Update a reminder
+ *     tags: [Reminders]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Reminder ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               reminderTime:
+ *                 type: string
+ *                 format: date-time
+ *               channels:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   enum: [EMAIL, PUSH, SMS, IN_APP]
+ *               status:
+ *                 type: string
+ *                 enum: [PENDING, SENT, FAILED, CANCELLED]
+ *     responses:
+ *       200:
+ *         description: Reminder updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/Reminder'
+ *                 message:
+ *                   type: string
+ *       404:
+ *         description: Reminder not found
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
  */
 router.put(
   '/:id',
@@ -197,8 +379,37 @@ router.put(
 );
 
 /**
- * DELETE /api/reminders/:id
- * Delete a reminder
+ * @swagger
+ * /api/reminders/{id}:
+ *   delete:
+ *     summary: Delete a reminder
+ *     tags: [Reminders]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Reminder ID
+ *     responses:
+ *       200:
+ *         description: Reminder deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *       404:
+ *         description: Reminder not found
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
  */
 router.delete(
   '/:id',

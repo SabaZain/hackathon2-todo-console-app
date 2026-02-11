@@ -27,7 +27,7 @@ export default function ReminderList({
     try {
       setLoading(true);
       setError(null);
-      const response = await apiService.get(`/tasks/${taskId}/reminders`);
+      const response = await apiService.get(`/reminders/tasks/${taskId}/reminders`);
       setReminders(response.data.data || []);
     } catch (err: any) {
       setError(err.message || 'Failed to load reminders');

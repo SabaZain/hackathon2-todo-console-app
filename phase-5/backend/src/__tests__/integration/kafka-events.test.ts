@@ -183,7 +183,7 @@ describe('Kafka Event Flow - Integration Tests', () => {
       });
 
       expect(auditLogs.length).toBeGreaterThan(0);
-      expect(auditLogs[0].operation).toBe('task.updated');
+      expect(auditLogs[0].operationType).toBe('task.updated');
     });
   });
 

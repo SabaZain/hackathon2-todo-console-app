@@ -1,4 +1,4 @@
-import { Task, RecurrencePattern, RecurrenceFrequency } from '@prisma/client';
+import { RecurrencePattern, RecurrenceFrequency } from '@prisma/client';
 
 export interface RecurrenceCalculationResult {
   nextOccurrence: Date;
@@ -102,13 +102,13 @@ export class RecurrenceCalculatorService {
       errors.push('Interval must be at least 1');
     }
 
-    if (pattern.frequency === RecurrenceFrequency.WEEKLY && pattern.dayOfWeek !== null) {
+    if (pattern.frequency === RecurrenceFrequency.WEEKLY && pattern.dayOfWeek !== null && pattern.dayOfWeek !== undefined) {
       if (pattern.dayOfWeek < 0 || pattern.dayOfWeek > 6) {
         errors.push('Day of week must be between 0 (Sunday) and 6 (Saturday)');
       }
     }
 
-    if (pattern.frequency === RecurrenceFrequency.MONTHLY && pattern.dayOfMonth !== null) {
+    if (pattern.frequency === RecurrenceFrequency.MONTHLY && pattern.dayOfMonth !== null && pattern.dayOfMonth !== undefined) {
       if (pattern.dayOfMonth < 1 || pattern.dayOfMonth > 31) {
         errors.push('Day of month must be between 1 and 31');
       }
@@ -129,8 +129,6 @@ export class RecurrenceCalculatorService {
    */
   describePattern(pattern: RecurrencePattern): string {
     const { frequency, interval, dayOfWeek, dayOfMonth } = pattern;
-
-    const intervalText = interval > 1 ? `every ${interval}` : 'every';
 
     switch (frequency) {
       case RecurrenceFrequency.DAILY:

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import logger from '../config/logger';
+import logger from '../../logger';
 
 export interface AuthRequest extends Request {
   user?: {
@@ -29,6 +29,17 @@ export const authMiddleware = async (
     const token = authHeader.substring(7);
     const jwtSecret = process.env.JWT_SECRET || 'phase5-secret-key-change-in-production';
 
+    // Development mode: Allow demo token
+    if (process.env.NODE_ENV === 'development' && token === 'demo-token') {
+      req.user = {
+        id: 'demo-user',
+        email: 'demo@example.com',
+        name: 'Demo User',
+      };
+      next();
+      return;
+    }
+
     try {
       const decoded = jwt.verify(token, jwtSecret) as {
         id: string;
@@ -56,7 +67,7 @@ export const authMiddleware = async (
 
 export const optionalAuthMiddleware = async (
   req: AuthRequest,
-  res: Response,
+  _res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {

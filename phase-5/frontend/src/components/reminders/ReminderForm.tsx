@@ -16,7 +16,7 @@ export interface ReminderFormData {
 }
 
 export default function ReminderForm({
-  taskId,
+  taskId: _taskId,
   onSubmit,
   onCancel,
   initialData,
@@ -25,7 +25,7 @@ export default function ReminderForm({
     initialData?.reminderTime || ''
   );
   const [channels, setChannels] = useState<ReminderChannel[]>(
-    initialData?.channels || ['IN_APP']
+    initialData?.channels || [ReminderChannel.IN_APP]
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -87,7 +87,7 @@ export default function ReminderForm({
           id="reminderTime"
           value={reminderTime}
           onChange={(e) => setReminderTime(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900"
           required
         />
         <p className="mt-1 text-xs text-gray-500">
@@ -103,8 +103,8 @@ export default function ReminderForm({
           <label className="flex items-center">
             <input
               type="checkbox"
-              checked={channels.includes('IN_APP')}
-              onChange={() => handleChannelToggle('IN_APP')}
+              checked={channels.includes(ReminderChannel.IN_APP)}
+              onChange={() => handleChannelToggle(ReminderChannel.IN_APP)}
               className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
             />
             <span className="ml-2 text-sm text-gray-700">
@@ -115,8 +115,8 @@ export default function ReminderForm({
           <label className="flex items-center">
             <input
               type="checkbox"
-              checked={channels.includes('EMAIL')}
-              onChange={() => handleChannelToggle('EMAIL')}
+              checked={channels.includes(ReminderChannel.EMAIL)}
+              onChange={() => handleChannelToggle(ReminderChannel.EMAIL)}
               className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
             />
             <span className="ml-2 text-sm text-gray-700">Email</span>
@@ -125,8 +125,8 @@ export default function ReminderForm({
           <label className="flex items-center">
             <input
               type="checkbox"
-              checked={channels.includes('PUSH')}
-              onChange={() => handleChannelToggle('PUSH')}
+              checked={channels.includes(ReminderChannel.PUSH)}
+              onChange={() => handleChannelToggle(ReminderChannel.PUSH)}
               className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
             />
             <span className="ml-2 text-sm text-gray-700">

@@ -56,8 +56,33 @@ const getTasksQuerySchema = Joi.object({
 });
 
 /**
- * POST /api/tasks
- * Create a new task
+ * @swagger
+ * /api/tasks:
+ *   post:
+ *     summary: Create a new task
+ *     tags: [Tasks]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/CreateTaskInput'
+ *     responses:
+ *       201:
+ *         description: Task created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/Task'
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
  */
 router.post(
   '/',
@@ -85,8 +110,68 @@ router.post(
 );
 
 /**
- * POST /api/tasks/recurring
- * Create a new recurring task
+ * @swagger
+ * /api/tasks/recurring:
+ *   post:
+ *     summary: Create a new recurring task
+ *     tags: [Tasks]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - title
+ *               - recurrencePattern
+ *             properties:
+ *               title:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               priority:
+ *                 type: string
+ *                 enum: [LOW, MEDIUM, HIGH, URGENT]
+ *               tags:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               dueDate:
+ *                 type: string
+ *                 format: date-time
+ *               recurrencePattern:
+ *                 type: object
+ *                 required:
+ *                   - frequency
+ *                   - interval
+ *                 properties:
+ *                   frequency:
+ *                     type: string
+ *                     enum: [DAILY, WEEKLY, MONTHLY, YEARLY, CUSTOM]
+ *                   interval:
+ *                     type: integer
+ *                     minimum: 1
+ *                   dayOfWeek:
+ *                     type: integer
+ *                     minimum: 0
+ *                     maximum: 6
+ *                   dayOfMonth:
+ *                     type: integer
+ *                     minimum: 1
+ *                     maximum: 31
+ *                   endDate:
+ *                     type: string
+ *                     format: date-time
+ *                   occurrencesCount:
+ *                     type: integer
+ *                     minimum: 1
+ *     responses:
+ *       201:
+ *         description: Recurring task created successfully
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
  */
 router.post(
   '/recurring',
@@ -114,8 +199,66 @@ router.post(
 );
 
 /**
- * GET /api/tasks
- * Get all tasks for the authenticated user
+ * @swagger
+ * /api/tasks:
+ *   get:
+ *     summary: Get all tasks for the authenticated user
+ *     tags: [Tasks]
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [PENDING, IN_PROGRESS, COMPLETED, CANCELLED]
+ *         description: Filter by task status
+ *       - in: query
+ *         name: priority
+ *         schema:
+ *           type: string
+ *           enum: [LOW, MEDIUM, HIGH, URGENT]
+ *         description: Filter by task priority
+ *       - in: query
+ *         name: tags
+ *         schema:
+ *           type: string
+ *         description: Comma-separated list of tags
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search in title and description
+ *       - in: query
+ *         name: dueDateFrom
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: Filter tasks due after this date
+ *       - in: query
+ *         name: dueDateTo
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *         description: Filter tasks due before this date
+ *     responses:
+ *       200:
+ *         description: List of tasks
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Task'
+ *                 count:
+ *                   type: integer
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
  */
 router.get(
   '/',
@@ -155,8 +298,37 @@ router.get(
 );
 
 /**
- * GET /api/tasks/:id
- * Get a specific task by ID
+ * @swagger
+ * /api/tasks/{id}:
+ *   get:
+ *     summary: Get a specific task by ID
+ *     tags: [Tasks]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Task ID
+ *     responses:
+ *       200:
+ *         description: Task details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/Task'
+ *       404:
+ *         description: Task not found
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
  */
 router.get(
   '/:id',
@@ -189,8 +361,39 @@ router.get(
 );
 
 /**
- * GET /api/tasks/:id/occurrences
- * Get all occurrences of a recurring task
+ * @swagger
+ * /api/tasks/{id}/occurrences:
+ *   get:
+ *     summary: Get all occurrences of a recurring task
+ *     tags: [Tasks]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Task ID
+ *     responses:
+ *       200:
+ *         description: List of task occurrences
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Task'
+ *                 count:
+ *                   type: integer
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
  */
 router.get(
   '/:id/occurrences',
@@ -216,8 +419,43 @@ router.get(
 );
 
 /**
- * PUT /api/tasks/:id
- * Update a task
+ * @swagger
+ * /api/tasks/{id}:
+ *   put:
+ *     summary: Update a task
+ *     tags: [Tasks]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Task ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/UpdateTaskInput'
+ *     responses:
+ *       200:
+ *         description: Task updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/Task'
+ *       404:
+ *         description: Task not found
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
  */
 router.put(
   '/:id',
@@ -243,8 +481,40 @@ router.put(
 );
 
 /**
- * POST /api/tasks/:id/complete
- * Mark a task as complete (and generate next occurrence if recurring)
+ * @swagger
+ * /api/tasks/{id}/complete:
+ *   post:
+ *     summary: Mark a task as complete
+ *     description: Marks a task as complete. If the task is recurring, automatically generates the next occurrence.
+ *     tags: [Tasks]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Task ID
+ *     responses:
+ *       200:
+ *         description: Task completed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/Task'
+ *                 message:
+ *                   type: string
+ *       404:
+ *         description: Task not found
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
  */
 router.post(
   '/:id/complete',
@@ -270,8 +540,37 @@ router.post(
 );
 
 /**
- * DELETE /api/tasks/:id
- * Delete a task
+ * @swagger
+ * /api/tasks/{id}:
+ *   delete:
+ *     summary: Delete a task
+ *     tags: [Tasks]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Task ID
+ *     responses:
+ *       200:
+ *         description: Task deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *       404:
+ *         description: Task not found
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
  */
 router.delete(
   '/:id',

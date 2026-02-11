@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Task, TaskPriority, RecurrenceFrequency } from '@/types';
 
 interface TaskFormProps {
@@ -170,7 +170,7 @@ export default function TaskForm({
           id="title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900"
           placeholder="Enter task title"
           required
         />
@@ -186,7 +186,7 @@ export default function TaskForm({
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900"
           placeholder="Enter task description"
         />
       </div>
@@ -200,7 +200,7 @@ export default function TaskForm({
           id="priority"
           value={priority}
           onChange={(e) => setPriority(e.target.value as TaskPriority)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900"
         >
           <option value={TaskPriority.LOW}>Low</option>
           <option value={TaskPriority.MEDIUM}>Medium</option>
@@ -222,7 +222,7 @@ export default function TaskForm({
                 handleAddTag();
               }
             }}
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900"
             placeholder="Add a tag"
           />
           <button
@@ -264,7 +264,7 @@ export default function TaskForm({
           id="dueDate"
           value={dueDate}
           onChange={(e) => setDueDate(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900"
         />
       </div>
 
@@ -299,12 +299,12 @@ export default function TaskForm({
                 min="1"
                 value={interval}
                 onChange={(e) => setInterval(parseInt(e.target.value) || 1)}
-                className="w-20 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-20 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900"
               />
               <select
                 value={frequency}
                 onChange={(e) => setFrequency(e.target.value as RecurrenceFrequency)}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900"
               >
                 <option value={RecurrenceFrequency.DAILY}>Day(s)</option>
                 <option value={RecurrenceFrequency.WEEKLY}>Week(s)</option>
@@ -323,7 +323,7 @@ export default function TaskForm({
               <select
                 value={dayOfWeek ?? ''}
                 onChange={(e) => setDayOfWeek(parseInt(e.target.value))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900"
                 required
               >
                 <option value="">Select a day</option>
@@ -350,7 +350,7 @@ export default function TaskForm({
                 max="31"
                 value={dayOfMonth ?? ''}
                 onChange={(e) => setDayOfMonth(parseInt(e.target.value) || undefined)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900"
                 placeholder="1-31"
                 required
               />
@@ -387,7 +387,7 @@ export default function TaskForm({
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="ml-6 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="ml-6 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900"
                 />
               )}
 
@@ -407,7 +407,7 @@ export default function TaskForm({
                     min="1"
                     value={occurrencesCount ?? ''}
                     onChange={(e) => setOccurrencesCount(parseInt(e.target.value) || undefined)}
-                    className="w-20 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-20 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900"
                   />
                   <span className="text-sm text-gray-700">occurrences</span>
                 </div>

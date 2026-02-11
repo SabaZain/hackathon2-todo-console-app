@@ -1,6 +1,6 @@
 import { Kafka, Producer, ProducerRecord, RecordMetadata } from 'kafkajs';
 import { v4 as uuidv4 } from 'uuid';
-import logger from '../config/logger';
+import logger from '../logger';
 
 export interface EventPayload {
   eventId: string;
@@ -27,7 +27,7 @@ class KafkaProducerService {
       brokers: [process.env.KAFKA_BROKERS || 'localhost:9092'],
       retry: {
         initialRetryTime: 100,
-        retries: 8,
+        retries: 2, // Reduced retries for faster startup when Kafka is unavailable
       },
     });
 
@@ -68,7 +68,12 @@ class KafkaProducerService {
     correlationId?: string
   ): Promise<RecordMetadata[]> {
     if (!this.isConnected) {
-      throw new Error('Kafka producer is not connected');
+      logger.debug(`Kafka not connected - skipping event publish to ${topic}:`, {
+        eventType,
+        taskId,
+        userId,
+      });
+      return []; // Return empty array instead of throwing error
     }
 
     const event: EventPayload = {
@@ -109,7 +114,8 @@ class KafkaProducerService {
       return metadata;
     } catch (error) {
       logger.error(`Failed to publish event to ${topic}:`, error);
-      throw error;
+      // Don't throw - just log the error and continue
+      return [];
     }
   }
 

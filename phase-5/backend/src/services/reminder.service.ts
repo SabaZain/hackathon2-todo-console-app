@@ -1,7 +1,7 @@
 import { PrismaClient, Reminder, ReminderStatus, ReminderChannel } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
 import { kafkaProducer } from '../events/kafka-producer';
-import logger from '../config/logger';
+import logger from '../logger';
 
 const prisma = new PrismaClient();
 
@@ -366,7 +366,18 @@ export class ReminderService {
 
     try {
       // Verify reminder exists and belongs to user
-      const reminder = await this.getReminderById(reminderId, userId);
+      const reminder = await prisma.reminder.findFirst({
+        where: {
+          id: reminderId,
+          task: {
+            userId,
+          },
+        },
+        include: {
+          task: true,
+        },
+      });
+
       if (!reminder) {
         throw new Error('Reminder not found or access denied');
       }

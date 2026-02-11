@@ -1,8 +1,8 @@
-import { PrismaClient, Task, RecurrencePattern, TaskStatus } from '@prisma/client';
+import { PrismaClient, Task, TaskStatus, RecurrenceFrequency } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
 import { recurrenceCalculator } from './recurrence-calculator.service';
 import { kafkaProducer } from '../events/kafka-producer';
-import logger from '../config/logger';
+import logger from '../logger';
 
 const prisma = new PrismaClient();
 
@@ -32,7 +32,10 @@ export class RecurringTaskService {
 
     try {
       // Validate recurrence pattern
-      const validation = recurrenceCalculator.validatePattern(input.recurrencePattern);
+      const validation = recurrenceCalculator.validatePattern({
+        ...input.recurrencePattern,
+        frequency: input.recurrencePattern.frequency as RecurrenceFrequency,
+      });
       if (!validation.valid) {
         throw new Error(`Invalid recurrence pattern: ${validation.errors.join(', ')}`);
       }
@@ -42,7 +45,7 @@ export class RecurringTaskService {
         // Create recurrence pattern
         const pattern = await tx.recurrencePattern.create({
           data: {
-            frequency: input.recurrencePattern.frequency as any,
+            frequency: input.recurrencePattern.frequency as RecurrenceFrequency,
             interval: input.recurrencePattern.interval,
             dayOfWeek: input.recurrencePattern.dayOfWeek,
             dayOfMonth: input.recurrencePattern.dayOfMonth,

@@ -22,23 +22,29 @@ export default function TasksPage() {
     setRefreshKey((prev) => prev + 1);
   }, []);
 
+  const handleConnect = useCallback(() => {
+    console.log('WebSocket connected');
+    setIsConnected(true);
+  }, []);
+
+  const handleDisconnect = useCallback(() => {
+    console.log('WebSocket disconnected');
+    setIsConnected(false);
+  }, []);
+
+  const handleError = useCallback((error: any) => {
+    console.error('WebSocket error:', error);
+  }, []);
+
   // Initialize WebSocket connection
   // TODO: Get actual userId and token from auth context
-  const { subscribeToTask, unsubscribeFromTask } = useWebSocket({
+  const { subscribeToTask: _subscribeToTask, unsubscribeFromTask: _unsubscribeFromTask } = useWebSocket({
     userId: 'demo-user', // Replace with actual user ID from auth
     token: 'demo-token', // Replace with actual JWT token from auth
     onTaskUpdate: handleTaskUpdate,
-    onConnect: () => {
-      console.log('WebSocket connected');
-      setIsConnected(true);
-    },
-    onDisconnect: () => {
-      console.log('WebSocket disconnected');
-      setIsConnected(false);
-    },
-    onError: (error) => {
-      console.error('WebSocket error:', error);
-    },
+    onConnect: handleConnect,
+    onDisconnect: handleDisconnect,
+    onError: handleError,
   });
 
   const handleCreateTask = async (taskData: TaskFormData) => {

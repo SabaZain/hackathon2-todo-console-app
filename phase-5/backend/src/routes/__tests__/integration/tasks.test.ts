@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { app } from '../../index';
+import { app } from '../../../index';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -7,7 +7,6 @@ const prisma = new PrismaClient();
 describe('Task API - Integration Tests', () => {
   let authToken: string;
   let userId: string;
-  let createdTaskId: string;
 
   beforeAll(async () => {
     // Setup: Create test user and get auth token
@@ -60,8 +59,6 @@ describe('Task API - Integration Tests', () => {
 
       expect(response.body.id).toBeDefined();
       expect(response.body.userId).toBe(userId);
-
-      createdTaskId = response.body.id;
     });
 
     it('should return 400 for invalid task data', async () => {
@@ -114,21 +111,21 @@ describe('Task API - Integration Tests', () => {
           {
             title: 'Task 1',
             userId,
-            priority: 'high',
+            priority: 'HIGH',
             tags: ['work'],
           },
           {
             title: 'Task 2',
             userId,
-            priority: 'low',
+            priority: 'LOW',
             tags: ['personal'],
           },
           {
             title: 'Task 3',
             userId,
-            priority: 'high',
+            priority: 'HIGH',
             tags: ['work', 'urgent'],
-            completed: true,
+            completedAt: new Date(),
           },
         ],
       });
@@ -264,7 +261,7 @@ describe('Task API - Integration Tests', () => {
         data: {
           title: 'Task to Update',
           userId,
-          priority: 'low',
+          priority: 'LOW',
         },
       });
       taskId = task.id;
@@ -339,7 +336,6 @@ describe('Task API - Integration Tests', () => {
         data: {
           title: 'Task to Complete',
           userId,
-          completed: false,
         },
       });
       taskId = task.id;

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import logger from '../config/logger';
+import logger from '../../logger';
 
 export interface ErrorResponse {
   error: string;
@@ -24,7 +24,7 @@ export const errorHandler = (
   err: Error | AppError,
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ): void => {
   logger.error('Error occurred:', {
     error: err.message,

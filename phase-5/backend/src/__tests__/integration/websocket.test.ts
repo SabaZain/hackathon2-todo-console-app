@@ -1,4 +1,4 @@
-import { io as ioClient, Socket } from 'socket.io-client';
+import ioClient from 'socket.io-client';
 import { Server } from 'socket.io';
 import { createServer } from 'http';
 import express from 'express';
@@ -6,7 +6,7 @@ import express from 'express';
 describe('WebSocket Real-Time Sync - Integration Tests', () => {
   let httpServer: any;
   let io: Server;
-  let clientSocket: Socket;
+  let clientSocket: any;
   let serverPort: number;
 
   beforeAll((done) => {
@@ -80,7 +80,7 @@ describe('WebSocket Real-Time Sync - Integration Tests', () => {
         },
       };
 
-      clientSocket.on('task-update', (data) => {
+      clientSocket.on('task-update', (data: any) => {
         expect(data).toMatchObject(taskUpdate);
         done();
       });
@@ -176,7 +176,7 @@ describe('WebSocket Real-Time Sync - Integration Tests', () => {
 
   describe('Message Types', () => {
     it('should handle task.created event', (done) => {
-      clientSocket.on('task-update', (data) => {
+      clientSocket.on('task-update', (data: any) => {
         expect(data.type).toBe('task.created');
         expect(data.taskId).toBeDefined();
         done();
@@ -190,7 +190,7 @@ describe('WebSocket Real-Time Sync - Integration Tests', () => {
     });
 
     it('should handle task.updated event', (done) => {
-      clientSocket.on('task-update', (data) => {
+      clientSocket.on('task-update', (data: any) => {
         expect(data.type).toBe('task.updated');
         expect(data.changes).toBeDefined();
         done();
@@ -204,7 +204,7 @@ describe('WebSocket Real-Time Sync - Integration Tests', () => {
     });
 
     it('should handle task.deleted event', (done) => {
-      clientSocket.on('task-update', (data) => {
+      clientSocket.on('task-update', (data: any) => {
         expect(data.type).toBe('task.deleted');
         done();
       });
@@ -216,7 +216,7 @@ describe('WebSocket Real-Time Sync - Integration Tests', () => {
     });
 
     it('should handle task.completed event', (done) => {
-      clientSocket.on('task-update', (data) => {
+      clientSocket.on('task-update', (data: any) => {
         expect(data.type).toBe('task.completed');
         expect(data.data.completed).toBe(true);
         done();
@@ -234,7 +234,7 @@ describe('WebSocket Real-Time Sync - Integration Tests', () => {
     it('should handle connection errors gracefully', (done) => {
       const badClient = ioClient('http://localhost:9999');
 
-      badClient.on('connect_error', (error) => {
+      badClient.on('connect_error', (error: any) => {
         expect(error).toBeDefined();
         badClient.disconnect();
         done();
@@ -242,7 +242,7 @@ describe('WebSocket Real-Time Sync - Integration Tests', () => {
     });
 
     it('should handle malformed messages', (done) => {
-      clientSocket.on('task-update', (data) => {
+      clientSocket.on('task-update', (data: any) => {
         // Should still receive the message
         expect(data).toBeDefined();
         done();

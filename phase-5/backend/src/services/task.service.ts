@@ -2,7 +2,7 @@ import { PrismaClient, Task, TaskStatus, TaskPriority } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
 import { kafkaProducer } from '../events/kafka-producer';
 import { recurringTaskService } from './recurring-task.service';
-import logger from '../config/logger';
+import logger from '../logger';
 
 const prisma = new PrismaClient();
 
