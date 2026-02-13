@@ -252,20 +252,20 @@ const ChatBot = ({ userId, token }: ChatBotProps) => {
       {/* Chatbot Icon Button */}
       <button
         onClick={toggleChat}
-        className="fixed bottom-6 right-6 bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition-all duration-300 z-[9999]"
+        className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 bg-blue-600 text-white p-3 sm:p-4 rounded-full shadow-lg hover:bg-blue-700 transition-all duration-300 z-[9999]"
         aria-label="Open chat"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
         </svg>
       </button>
 
       {/* Chat Modal */}
       {isOpen && (
-        <div className="fixed bottom-24 right-6 w-full max-w-md h-[500px] bg-white rounded-xl shadow-xl flex flex-col z-[9998] border border-gray-200">
+        <div className="fixed bottom-20 left-4 right-4 sm:bottom-24 sm:left-auto sm:right-6 sm:w-full max-w-md h-[75vh] max-h-[600px] sm:h-[500px] bg-white rounded-xl shadow-xl flex flex-col z-[9998] border border-gray-200">
           {/* Chat Header */}
-          <div className="bg-blue-600 text-white p-4 rounded-t-xl flex justify-between items-center">
-            <h3 className="font-semibold">AI Assistant</h3>
+          <div className="bg-blue-600 text-white p-3 sm:p-4 rounded-t-xl flex justify-between items-center">
+            <h3 className="font-semibold text-sm sm:text-base">AI Assistant</h3>
             <button
               onClick={toggleChat}
               className="text-white hover:text-gray-200 focus:outline-none"
@@ -277,23 +277,23 @@ const ChatBot = ({ userId, token }: ChatBotProps) => {
           </div>
 
           {/* Messages Container */}
-          <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
+          <div className="flex-1 overflow-y-auto p-3 sm:p-4 bg-gray-50">
             {messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="flex flex-col items-center justify-center h-full text-gray-500 px-4">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 sm:h-12 sm:w-12 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                 </svg>
-                <p>Start a conversation with the AI assistant</p>
+                <p className="text-sm sm:text-base text-center">Start a conversation with the AI assistant</p>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 {messages.map((message) => (
                   <div
                     key={message.id}
                     className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
-                      className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                      className={`max-w-[75%] sm:max-w-xs lg:max-w-md px-3 sm:px-4 py-2 rounded-lg text-sm sm:text-base ${
                         message.sender === 'user'
                           ? 'bg-blue-600 text-white'
                           : 'bg-gray-200 text-gray-800'
@@ -301,7 +301,7 @@ const ChatBot = ({ userId, token }: ChatBotProps) => {
                     >
                       <p>{message.text}</p>
                       <p
-                        className={`text-xs mt-1 ${
+                        className={`text-[10px] sm:text-xs mt-1 ${
                           message.sender === 'user' ? 'text-blue-200' : 'text-gray-500'
                         }`}
                       >
@@ -312,7 +312,7 @@ const ChatBot = ({ userId, token }: ChatBotProps) => {
                 ))}
                 {isLoading && (
                   <div className="flex justify-start">
-                    <div className="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg max-w-xs">
+                    <div className="bg-gray-200 text-gray-800 px-3 sm:px-4 py-2 rounded-lg max-w-[75%] sm:max-w-xs">
                       <div className="flex space-x-2">
                         <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
                         <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
@@ -327,8 +327,8 @@ const ChatBot = ({ userId, token }: ChatBotProps) => {
           </div>
 
           {/* Input Area */}
-          <div className="border-t border-gray-200 p-3 bg-white rounded-b-xl">
-            <div className="flex items-center">
+          <div className="border-t border-gray-200 p-2 sm:p-3 bg-white rounded-b-xl">
+            <div className="flex items-center gap-2">
               <input
                 type="text"
                 value={inputValue}
@@ -336,12 +336,12 @@ const ChatBot = ({ userId, token }: ChatBotProps) => {
                 onKeyPress={handleKeyPress}
                 placeholder="Type your message..."
                 disabled={isLoading}
-                className="flex-1 border border-gray-300 rounded-l-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="flex-1 border border-gray-300 rounded-lg px-3 sm:px-4 py-2 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
               <button
                 onClick={handleSendMessage}
                 disabled={isLoading || !inputValue.trim()}
-                className={`bg-blue-600 text-white px-4 py-2 rounded-r-lg ${
+                className={`bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-lg flex-shrink-0 ${
                   isLoading || !inputValue.trim() ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'
                 }`}
               >
